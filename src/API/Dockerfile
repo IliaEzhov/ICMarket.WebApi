@@ -7,24 +7,34 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Blockcypher configuration via environment variables
+ENV Blockcypher__BaseUrl="https://api.blockcypher.com"
+ENV Blockcypher__Endpoints__0="/v1/eth/main"
+ENV Blockcypher__Endpoints__1="/v1/dash/main"
+ENV Blockcypher__Endpoints__2="/v1/btc/main"
+ENV Blockcypher__Endpoints__3="/v1/btc/test3"
+ENV Blockcypher__Endpoints__4="/v1/ltc/main"
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/API/API.csproj", "src/API/"]
-RUN dotnet restore "./src/API/API.csproj"
+COPY ["src/API/ICMarket.API.csproj", "src/API/"]
+COPY ["src/Application/ICMarket.Application.csproj", "src/Application/"]
+COPY ["src/Domain/ICMarket.Domain.csproj", "src/Domain/"]
+COPY ["src/Infrastructure/ICMarket.Infrastructure.csproj", "src/Infrastructure/"]
+RUN dotnet restore "./src/API/ICMarket.API.csproj"
 COPY . .
 WORKDIR "/src/src/API"
-RUN dotnet build "./API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./ICMarket.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./ICMarket.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "API.dll"]
+ENTRYPOINT ["dotnet", "ICMarket.API.dll"]

@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+src/API/ICMarket.db-wal
+src/API/ICMarket.db
+src/API/ICMarket.db-shm
