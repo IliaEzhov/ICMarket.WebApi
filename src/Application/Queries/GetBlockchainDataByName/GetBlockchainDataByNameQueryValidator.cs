@@ -4,7 +4,7 @@ namespace ICMarket.Application.Queries.GetBlockchainDataByName;
 
 public class GetBlockchainDataByNameQueryValidator : AbstractValidator<GetBlockchainDataByNameQuery>
 {
-	private static readonly string[] ValidBlockchainNames = { "eth/main", "dash/main", "btc/main", "btc/test3", "ltc/main" };
+	private static readonly string[] ValidBlockchainNames = { "ETH.main", "DASH.main", "BTC.main", "BTC.test3", "LTC.main" };
 
 	public GetBlockchainDataByNameQueryValidator()
 	{

@@ -14,11 +14,11 @@ public class GetBlockchainDataByNameQueryValidatorTests
 		_validator = new GetBlockchainDataByNameQueryValidator();
 	}
 
-	[TestCase("eth/main")]
-	[TestCase("dash/main")]
-	[TestCase("btc/main")]
-	[TestCase("btc/test3")]
-	[TestCase("ltc/main")]
+	[TestCase("ETH.main")]
+	[TestCase("DASH.main")]
+	[TestCase("BTC.main")]
+	[TestCase("BTC.test3")]
+	[TestCase("LTC.main")]
 	public void Validate_ValidBlockchainName_ShouldNotHaveErrors(string name)
 	{
 		var query = new GetBlockchainDataByNameQuery(name);
@@ -28,8 +28,8 @@ public class GetBlockchainDataByNameQueryValidatorTests
 		result.ShouldNotHaveAnyValidationErrors();
 	}
 
-	[TestCase("ETH/MAIN")]
-	[TestCase("Btc/Main")]
+	[TestCase("eth.main")]
+	[TestCase("btc.main")]
 	public void Validate_CaseInsensitiveName_ShouldNotHaveErrors(string name)
 	{
 		var query = new GetBlockchainDataByNameQuery(name);
@@ -52,7 +52,7 @@ public class GetBlockchainDataByNameQueryValidatorTests
 	[Test]
 	public void Validate_InvalidName_ShouldHaveError()
 	{
-		var query = new GetBlockchainDataByNameQuery("invalid/chain");
+		var query = new GetBlockchainDataByNameQuery("invalid.chain");
 
 		var result = _validator.TestValidate(query);
 

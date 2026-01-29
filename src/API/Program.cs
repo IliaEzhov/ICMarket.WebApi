@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ICMarket.API.Filters;
 using ICMarket.Application;
 using ICMarket.Infrastructure;
 using ICMarket.Infrastructure.Persistence;
@@ -7,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add controllers with JSON serialization options
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+	{
+		options.Filters.Add<ValidationExceptionFilter>();
+	})
 	.AddJsonOptions(options =>
 	{
 		options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
