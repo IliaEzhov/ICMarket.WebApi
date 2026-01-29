@@ -1,5 +1,6 @@
 using FluentValidation.TestHelper;
 using ICMarket.Application.Queries.GetBlockchainDataByName;
+using ICMarket.Common.Constants;
 
 namespace ICMarket.UnitTests.Validators;
 
@@ -14,11 +15,11 @@ public class GetBlockchainDataByNameQueryValidatorTests
 		_validator = new GetBlockchainDataByNameQueryValidator();
 	}
 
-	[TestCase("ETH.main")]
-	[TestCase("DASH.main")]
-	[TestCase("BTC.main")]
-	[TestCase("BTC.test3")]
-	[TestCase("LTC.main")]
+	[TestCase(BlockchainConstants.Names.EthMain)]
+	[TestCase(BlockchainConstants.Names.DashMain)]
+	[TestCase(BlockchainConstants.Names.BtcMain)]
+	[TestCase(BlockchainConstants.Names.BtcTest3)]
+	[TestCase(BlockchainConstants.Names.LtcMain)]
 	public void Validate_ValidBlockchainName_ShouldNotHaveErrors(string name)
 	{
 		var query = new GetBlockchainDataByNameQuery(name);

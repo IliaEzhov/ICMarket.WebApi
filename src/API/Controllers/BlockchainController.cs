@@ -2,13 +2,14 @@ using ICMarket.Application.Commands.FetchAndStoreBlockchainData;
 using ICMarket.Application.DTOs;
 using ICMarket.Application.Queries.GetAllBlockchainData;
 using ICMarket.Application.Queries.GetBlockchainDataByName;
+using ICMarket.Common.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ICMarket.API.Controllers;
 
 [ApiController]
-[Route("api/blockchain")]
+[Route(ApiConstants.Routes.Blockchain)]
 public class BlockchainController : ControllerBase
 {
 	private readonly IMediator _mediator;

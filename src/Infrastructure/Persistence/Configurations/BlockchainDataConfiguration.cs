@@ -1,3 +1,4 @@
+using ICMarket.Common.Constants;
 using ICMarket.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -8,7 +9,7 @@ public class BlockchainDataConfiguration : IEntityTypeConfiguration<BlockchainDa
 {
 	public void Configure(EntityTypeBuilder<BlockchainData> builder)
 	{
-		builder.ToTable("BlockchainData");
+		builder.ToTable(DatabaseConstants.Tables.BlockchainData);
 
 		builder.HasKey(e => e.Id);
 
@@ -20,30 +21,30 @@ public class BlockchainDataConfiguration : IEntityTypeConfiguration<BlockchainDa
 
 		builder.Property(e => e.Name)
 			.IsRequired()
-			.HasMaxLength(50);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.Name);
 
 		builder.Property(e => e.Hash)
 			.IsRequired()
-			.HasMaxLength(256);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.Hash);
 
 		builder.Property(e => e.Time)
 			.IsRequired()
-			.HasMaxLength(100);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.Time);
 
 		builder.Property(e => e.LatestUrl)
-			.HasMaxLength(500);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.LatestUrl);
 
 		builder.Property(e => e.PreviousHash)
-			.HasMaxLength(256);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.PreviousHash);
 
 		builder.Property(e => e.PreviousUrl)
-			.HasMaxLength(500);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.PreviousUrl);
 
 		builder.Property(e => e.LastForkHash)
-			.HasMaxLength(256);
+			.HasMaxLength(DatabaseConstants.ColumnLengths.LastForkHash);
 
 		builder.HasIndex(e => new { e.Name, e.CreatedAt })
-			.HasDatabaseName("IX_BlockchainData_Name_CreatedAt");
+			.HasDatabaseName(DatabaseConstants.Indexes.BlockchainDataNameCreatedAt);
 		builder.HasIndex(e => e.CreatedAt);
 	}
 }

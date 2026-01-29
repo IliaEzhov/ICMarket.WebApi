@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Application\ICMarket.Application.csproj" />
     <ProjectReference Include="..\Domain\ICMarket.Domain.csproj" />
+    <ProjectReference Include="..\Common\ICMarket.Common.csproj" />
   </ItemGroup>
 
 </Project>

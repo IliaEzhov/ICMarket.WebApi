@@ -1,4 +1,5 @@
 using ICMarket.Application.Mappings;
+using ICMarket.Common.Constants;
 using ICMarket.Domain.Entities;
 
 namespace ICMarket.UnitTests.Mappings;
@@ -13,7 +14,7 @@ public class BlockchainDataMappingExtensionsTests
 		{
 			Id = Guid.NewGuid(),
 			CreatedAt = DateTime.UtcNow,
-			Name = "BTC.main",
+			Name = BlockchainConstants.Names.BtcMain,
 			Height = 800000,
 			Hash = "0000000000000000000abc",
 			Time = "2024-01-01T00:00:00Z",
@@ -68,7 +69,7 @@ public class BlockchainDataMappingExtensionsTests
 		var entity = new BlockchainData
 		{
 			Id = Guid.NewGuid(),
-			Name = "ETH.main",
+			Name = BlockchainConstants.Names.EthMain,
 			Height = 19000000,
 			Hash = "abc123",
 			Time = "2024-01-01T00:00:00Z",
@@ -103,17 +104,17 @@ public class BlockchainDataMappingExtensionsTests
 	{
 		var entities = new List<BlockchainData>
 		{
-			new() { Id = Guid.NewGuid(), Name = "BTC.main", Height = 800000, Hash = "abc" },
-			new() { Id = Guid.NewGuid(), Name = "ETH.main", Height = 19000000, Hash = "def" },
-			new() { Id = Guid.NewGuid(), Name = "LTC.main", Height = 2500000, Hash = "ghi" }
+			new() { Id = Guid.NewGuid(), Name = BlockchainConstants.Names.BtcMain, Height = 800000, Hash = "abc" },
+			new() { Id = Guid.NewGuid(), Name = BlockchainConstants.Names.EthMain, Height = 19000000, Hash = "def" },
+			new() { Id = Guid.NewGuid(), Name = BlockchainConstants.Names.LtcMain, Height = 2500000, Hash = "ghi" }
 		};
 
 		var dtos = entities.ToDtoList().ToList();
 
 		Assert.That(dtos, Has.Count.EqualTo(3));
-		Assert.That(dtos[0].Name, Is.EqualTo("BTC.main"));
-		Assert.That(dtos[1].Name, Is.EqualTo("ETH.main"));
-		Assert.That(dtos[2].Name, Is.EqualTo("LTC.main"));
+		Assert.That(dtos[0].Name, Is.EqualTo(BlockchainConstants.Names.BtcMain));
+		Assert.That(dtos[1].Name, Is.EqualTo(BlockchainConstants.Names.EthMain));
+		Assert.That(dtos[2].Name, Is.EqualTo(BlockchainConstants.Names.LtcMain));
 	}
 
 	[Test]

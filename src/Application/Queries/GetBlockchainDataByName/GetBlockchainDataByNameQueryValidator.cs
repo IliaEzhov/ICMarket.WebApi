@@ -1,10 +1,11 @@
 using FluentValidation;
+using ICMarket.Common.Constants;
 
 namespace ICMarket.Application.Queries.GetBlockchainDataByName;
 
 public class GetBlockchainDataByNameQueryValidator : AbstractValidator<GetBlockchainDataByNameQuery>
 {
-	private static readonly string[] ValidBlockchainNames = { "ETH.main", "DASH.main", "BTC.main", "BTC.test3", "LTC.main" };
+	private static readonly string[] ValidBlockchainNames = BlockchainConstants.Names.All;
 
 	public GetBlockchainDataByNameQueryValidator()
 	{
