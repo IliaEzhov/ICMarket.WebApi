@@ -1,5 +1,9 @@
 namespace ICMarket.Domain.Entities;
 
+/// <summary>
+/// Represents a snapshot of blockchain network data fetched from the BlockCypher API.
+/// Contains block height, hashes, peer info, and fee/gas metrics.
+/// </summary>
 public class BlockchainData : BaseEntity
 {
 	public string Name { get; set; } = string.Empty;

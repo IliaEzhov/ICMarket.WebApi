@@ -6,6 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ICMarket.Application.Queries.GetBlockchainDataByName;
 
+/// <summary>
+/// Handles <see cref="GetBlockchainDataByNameQuery"/> by retrieving blockchain data
+/// filtered by name from the repository.
+/// </summary>
 public class GetBlockchainDataByNameQueryHandler : IRequestHandler<GetBlockchainDataByNameQuery, IEnumerable<BlockchainDataDto>>
 {
 	private readonly IBlockchainDataRepository _repository;

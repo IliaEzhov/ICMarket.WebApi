@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ICMarket.Infrastructure.Repositories;
 
+/// <summary>
+/// EF Core implementation of <see cref="IBlockchainDataRepository"/>.
+/// Provides read/write access to blockchain data with case-insensitive name filtering.
+/// </summary>
 public class BlockchainDataRepository : IBlockchainDataRepository
 {
 	private readonly AppDbContext _context;

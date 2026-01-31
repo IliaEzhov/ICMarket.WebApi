@@ -6,6 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ICMarket.Application.Queries.GetAllBlockchainData;
 
+/// <summary>
+/// Handles <see cref="GetAllBlockchainDataQuery"/> by retrieving all blockchain data from the repository.
+/// </summary>
 public class GetAllBlockchainDataQueryHandler : IRequestHandler<GetAllBlockchainDataQuery, IEnumerable<BlockchainDataDto>>
 {
 	private readonly IBlockchainDataRepository _repository;

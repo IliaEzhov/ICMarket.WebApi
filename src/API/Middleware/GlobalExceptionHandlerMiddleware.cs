@@ -3,6 +3,10 @@ using System.Text.Json;
 
 namespace ICMarket.API.Middleware;
 
+/// <summary>
+/// Middleware that catches all unhandled exceptions and returns a structured JSON error response.
+/// In Development, includes exception details; in Production, returns a generic error message.
+/// </summary>
 public class GlobalExceptionHandlerMiddleware
 {
 	private readonly RequestDelegate _next;

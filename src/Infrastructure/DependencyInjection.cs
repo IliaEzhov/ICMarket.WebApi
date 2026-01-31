@@ -11,8 +11,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ICMarket.Infrastructure;
 
+/// <summary>
+/// Dependency injection extensions for the Infrastructure layer.
+/// </summary>
 public static class DependencyInjection
 {
+	/// <summary>
+	/// Registers Infrastructure layer services: EF Core DbContext (SQLite), repository,
+	/// Unit of Work, BlockCypher HTTP client, and configuration bindings.
+	/// </summary>
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 	{
 		services.AddDbContext<AppDbContext>(options =>

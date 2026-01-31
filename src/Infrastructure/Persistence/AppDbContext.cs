@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ICMarket.Infrastructure.Persistence;
 
+/// <summary>
+/// Entity Framework Core database context implementing <see cref="IUnitOfWork"/>.
+/// Manages persistence for blockchain data using SQLite.
+/// </summary>
 public class AppDbContext : DbContext, IUnitOfWork
 {
 	public DbSet<BlockchainData> BlockchainData => Set<BlockchainData>();

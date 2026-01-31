@@ -3,6 +3,10 @@ using ICMarket.Common.Constants;
 
 namespace ICMarket.Application.Queries.GetBlockchainDataByName;
 
+/// <summary>
+/// Validates <see cref="GetBlockchainDataByNameQuery"/> ensuring the blockchain name
+/// is non-empty and matches one of the supported blockchain identifiers.
+/// </summary>
 public class GetBlockchainDataByNameQueryValidator : AbstractValidator<GetBlockchainDataByNameQuery>
 {
 	private static readonly string[] ValidBlockchainNames = BlockchainConstants.Names.All;

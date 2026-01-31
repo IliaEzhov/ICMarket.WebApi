@@ -2,6 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace ICMarket.Infrastructure.Models;
 
+/// <summary>
+/// Deserialization model matching the JSON response from the BlockCypher blockchain info API.
+/// See: https://www.blockcypher.com/dev/bitcoin/#blockchain
+/// </summary>
 public class BlockcypherResponse
 {
 	[JsonPropertyName("name")]

@@ -3,6 +3,11 @@ using MediatR;
 
 namespace ICMarket.Application.Behaviors;
 
+/// <summary>
+/// MediatR pipeline behavior that automatically validates incoming requests using
+/// all registered FluentValidation validators. Throws <see cref="ValidationException"/>
+/// if any validation failures occur, preventing the request from reaching its handler.
+/// </summary>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 	where TRequest : IRequest<TResponse>
 {

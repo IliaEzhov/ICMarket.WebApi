@@ -4,6 +4,7 @@ using ICMarket.FunctionalTests.Infrastructure;
 
 namespace ICMarket.FunctionalTests;
 
+[TestFixture]
 public class ValidationTests
 {
 	private CustomWebApplicationFactory _factory = null!;

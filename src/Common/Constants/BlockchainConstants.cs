@@ -1,5 +1,9 @@
 namespace ICMarket.Common.Constants;
 
+/// <summary>
+/// Constants for supported blockchain identifiers, BlockCypher API endpoint paths,
+/// and API base URL.
+/// </summary>
 public static class BlockchainConstants
 {
 	public static class Names

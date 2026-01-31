@@ -3,6 +3,7 @@ using ICMarket.IntegrationTests.Infrastructure;
 
 namespace ICMarket.IntegrationTests;
 
+[TestFixture]
 public class HealthCheckTests
 {
 	private CustomWebApplicationFactory _factory = null!;

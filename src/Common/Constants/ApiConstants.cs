@@ -1,5 +1,8 @@
 namespace ICMarket.Common.Constants;
 
+/// <summary>
+/// Shared constants for API route paths, CORS policy names, and configuration section keys.
+/// </summary>
 public static class ApiConstants
 {
 	public static class Routes

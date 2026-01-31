@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ICMarket.API.Controllers;
 
+/// <summary>
+/// API controller for fetching, storing, and querying blockchain network data
+/// from the BlockCypher API (ETH, DASH, BTC, LTC).
+/// </summary>
 [ApiController]
 [Route(ApiConstants.Routes.Blockchain)]
 public class BlockchainController : ControllerBase
@@ -21,6 +25,10 @@ public class BlockchainController : ControllerBase
 		_logger = logger;
 	}
 
+	/// <summary>
+	/// Fetches blockchain data from all configured BlockCypher endpoints and stores the results.
+	/// </summary>
+	/// <returns>The newly fetched and stored blockchain data records.</returns>
 	[HttpPost("fetch")]
 	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> FetchBlockchainData(CancellationToken cancellationToken)
@@ -31,6 +39,10 @@ public class BlockchainController : ControllerBase
 		return Ok(result);
 	}
 
+	/// <summary>
+	/// Retrieves all stored blockchain data history, ordered by CreatedAt descending.
+	/// </summary>
+	/// <returns>All blockchain data records.</returns>
 	[HttpGet]
 	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -41,6 +53,11 @@ public class BlockchainController : ControllerBase
 		return Ok(result);
 	}
 
+	/// <summary>
+	/// Retrieves stored blockchain data history filtered by blockchain name.
+	/// </summary>
+	/// <param name="name">Blockchain name (e.g., "BTC.main", "ETH.main"). Case-insensitive.</param>
+	/// <returns>Blockchain data records for the specified blockchain.</returns>
 	[HttpGet("{name}")]
 	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]

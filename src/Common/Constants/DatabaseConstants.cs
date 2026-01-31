@@ -1,5 +1,8 @@
 namespace ICMarket.Common.Constants;
 
+/// <summary>
+/// Constants for database table names, index names, column max lengths, and connection string keys.
+/// </summary>
 public static class DatabaseConstants
 {
 	public static class Tables

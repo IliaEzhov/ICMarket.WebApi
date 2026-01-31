@@ -3,8 +3,15 @@ using ICMarket.Domain.Entities;
 
 namespace ICMarket.Application.Mappings;
 
+/// <summary>
+/// Extension methods for mapping between <see cref="BlockchainData"/> domain entities
+/// and <see cref="BlockchainDataDto"/> data transfer objects.
+/// </summary>
 public static class BlockchainDataMappingExtensions
 {
+	/// <summary>
+	/// Maps a single <see cref="BlockchainData"/> entity to a <see cref="BlockchainDataDto"/>.
+	/// </summary>
 	public static BlockchainDataDto ToDto(this BlockchainData entity)
 	{
 		return new BlockchainDataDto
@@ -35,6 +42,9 @@ public static class BlockchainDataMappingExtensions
 		};
 	}
 
+	/// <summary>
+	/// Maps a collection of <see cref="BlockchainData"/> entities to DTOs.
+	/// </summary>
 	public static IEnumerable<BlockchainDataDto> ToDtoList(this IEnumerable<BlockchainData> entities)
 	{
 		return entities.Select(e => e.ToDto());

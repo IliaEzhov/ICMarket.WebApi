@@ -8,6 +8,7 @@ using Moq;
 
 namespace ICMarket.IntegrationTests;
 
+[TestFixture]
 public class BlockchainEndpointTests
 {
 	private CustomWebApplicationFactory _factory = null!;

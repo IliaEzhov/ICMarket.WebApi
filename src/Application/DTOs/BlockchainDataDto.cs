@@ -1,5 +1,8 @@
 namespace ICMarket.Application.DTOs;
 
+/// <summary>
+/// Data transfer object representing a blockchain network data snapshot returned by the API.
+/// </summary>
 public class BlockchainDataDto
 {
 	public Guid Id { get; set; }

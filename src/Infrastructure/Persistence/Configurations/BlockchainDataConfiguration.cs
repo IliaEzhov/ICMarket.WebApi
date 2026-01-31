@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ICMarket.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// EF Core entity configuration for <see cref="BlockchainData"/>.
+/// Defines table name, column max lengths, indexes, and required fields.
+/// </summary>
 public class BlockchainDataConfiguration : IEntityTypeConfiguration<BlockchainData>
 {
 	public void Configure(EntityTypeBuilder<BlockchainData> builder)

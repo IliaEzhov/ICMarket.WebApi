@@ -1,9 +1,11 @@
 using System.Net;
 using System.Text.Json;
+using ICMarket.Common.Constants;
 using ICMarket.IntegrationTests.Infrastructure;
 
 namespace ICMarket.IntegrationTests;
 
+[TestFixture]
 public class SwaggerTests
 {
 	private CustomWebApplicationFactory _factory = null!;
@@ -56,7 +58,7 @@ public class SwaggerTests
 	[Test]
 	public async Task SwaggerUI_ReturnsOk()
 	{
-		var response = await _client.GetAsync("/swagger/index.html");
+		var response = await _client.GetAsync(SwaggerConstants.Endpoints.SwaggerUi);
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 	}

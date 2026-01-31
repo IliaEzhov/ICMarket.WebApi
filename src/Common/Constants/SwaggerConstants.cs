@@ -1,5 +1,8 @@
 namespace ICMarket.Common.Constants;
 
+/// <summary>
+/// Constants for Swagger/OpenAPI configuration: API metadata and endpoint URLs.
+/// </summary>
 public static class SwaggerConstants
 {
 	public static class ApiInfo
@@ -12,6 +15,6 @@ public static class SwaggerConstants
 	public static class Endpoints
 	{
 		public const string SwaggerJson = "/swagger/v1/swagger.json";
-		public const string SwaggerUi = "/swagger/v1/swagger.json";
+		public const string SwaggerUi = "/swagger/index.html";
 	}
 }

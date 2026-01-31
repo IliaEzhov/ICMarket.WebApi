@@ -8,6 +8,10 @@ using Microsoft.Extensions.Options;
 
 namespace ICMarket.Infrastructure.Services;
 
+/// <summary>
+/// Implementation of <see cref="IBlockchainService"/> that fetches blockchain network data
+/// from the BlockCypher REST API. Uses <see cref="Task.WhenAll"/> for parallel endpoint fetching.
+/// </summary>
 public class BlockcypherService : IBlockchainService
 {
 	private readonly HttpClient _httpClient;

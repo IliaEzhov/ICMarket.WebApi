@@ -7,6 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ICMarket.Application.Commands.FetchAndStoreBlockchainData;
 
+/// <summary>
+/// Handles <see cref="FetchAndStoreBlockchainDataCommand"/> by fetching data from all
+/// BlockCypher endpoints in parallel, persisting it via the repository, and returning DTOs.
+/// </summary>
 public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAndStoreBlockchainDataCommand, IEnumerable<BlockchainDataDto>>
 {
 	private readonly IBlockchainService _blockchainService;

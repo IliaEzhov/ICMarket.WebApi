@@ -6,8 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ICMarket.Application;
 
+/// <summary>
+/// Dependency injection extensions for the Application layer.
+/// </summary>
 public static class DependencyInjection
 {
+	/// <summary>
+	/// Registers Application layer services: MediatR handlers, FluentValidation validators,
+	/// and the validation pipeline behavior.
+	/// </summary>
 	public static IServiceCollection AddApplication(this IServiceCollection services)
 	{
 		var assembly = Assembly.GetExecutingAssembly();
