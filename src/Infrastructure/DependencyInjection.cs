@@ -3,6 +3,7 @@ using ICMarket.Domain.Interfaces;
 using ICMarket.Infrastructure.Configuration;
 using ICMarket.Infrastructure.Persistence;
 using ICMarket.Infrastructure.Repositories;
+using ICMarket.Common.Constants;
 using ICMarket.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +16,7 @@ public static class DependencyInjection
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 	{
 		services.AddDbContext<AppDbContext>(options =>
-			options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+			options.UseSqlite(configuration.GetConnectionString(DatabaseConstants.Configuration.DefaultConnection)));
 
 		services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
 		services.AddScoped<IBlockchainDataRepository, BlockchainDataRepository>();

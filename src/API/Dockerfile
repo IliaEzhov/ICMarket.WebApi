@@ -23,6 +23,7 @@ COPY ["src/API/ICMarket.API.csproj", "src/API/"]
 COPY ["src/Application/ICMarket.Application.csproj", "src/Application/"]
 COPY ["src/Domain/ICMarket.Domain.csproj", "src/Domain/"]
 COPY ["src/Infrastructure/ICMarket.Infrastructure.csproj", "src/Infrastructure/"]
+COPY ["src/Common/ICMarket.Common.csproj", "src/Common/"]
 RUN dotnet restore "./src/API/ICMarket.API.csproj"
 COPY . .
 WORKDIR "/src/src/API"

@@ -2,6 +2,7 @@ using ICMarket.Application.Commands.FetchAndStoreBlockchainData;
 using ICMarket.Application.Interfaces;
 using ICMarket.Domain.Entities;
 using ICMarket.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ICMarket.UnitTests.Handlers;
@@ -23,7 +24,8 @@ public class FetchAndStoreBlockchainDataCommandHandlerTests
 		_handler = new FetchAndStoreBlockchainDataCommandHandler(
 			_blockchainServiceMock.Object,
 			_repositoryMock.Object,
-			_unitOfWorkMock.Object);
+			_unitOfWorkMock.Object,
+			Mock.Of<ILogger<FetchAndStoreBlockchainDataCommandHandler>>());
 	}
 
 	[Test]

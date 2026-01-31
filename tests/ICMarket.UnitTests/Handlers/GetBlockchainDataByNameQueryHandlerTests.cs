@@ -1,6 +1,7 @@
 using ICMarket.Application.Queries.GetBlockchainDataByName;
 using ICMarket.Domain.Entities;
 using ICMarket.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ICMarket.UnitTests.Handlers;
@@ -15,7 +16,7 @@ public class GetBlockchainDataByNameQueryHandlerTests
 	public void SetUp()
 	{
 		_repositoryMock = new Mock<IBlockchainDataRepository>();
-		_handler = new GetBlockchainDataByNameQueryHandler(_repositoryMock.Object);
+		_handler = new GetBlockchainDataByNameQueryHandler(_repositoryMock.Object, Mock.Of<ILogger<GetBlockchainDataByNameQueryHandler>>());
 	}
 
 	[Test]

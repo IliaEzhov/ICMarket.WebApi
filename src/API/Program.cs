@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using ICMarket.API.Filters;
+using ICMarket.API.Middleware;
 using ICMarket.Application;
 using ICMarket.Common.Constants;
 using ICMarket.Infrastructure;
@@ -60,6 +61,8 @@ using (var scope = app.Services.CreateScope())
 	await dbContext.Database.EnsureCreatedAsync();
 }
 
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
 // Swagger UI enabled unconditionally
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -73,3 +76,5 @@ app.MapControllers();
 app.MapHealthChecks(ApiConstants.Routes.Health);
 
 await app.RunAsync();
+
+public partial class Program { }
