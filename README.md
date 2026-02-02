@@ -99,8 +99,8 @@ ICMarket.WebApi/
 │       └── Constants/                # BlockchainConstants, DatabaseConstants, ApiConstants
 │
 ├── tests/
-│   ├── ICMarket.UnitTests/           # 27 NUnit tests (handlers, validators, mappings)
-│   ├── ICMarket.IntegrationTests/    # Integration tests (health, swagger, endpoints)
+│   ├── ICMarket.UnitTests/           # 28 NUnit tests (handlers, validators, mappings)
+│   ├── ICMarket.IntegrationTests/    # 19 integration tests (health, swagger, endpoints)
 │   └── ICMarket.FunctionalTests/     # 18 end-to-end workflow tests
 │
 ├── docker-compose.yml                # Container orchestration
@@ -225,13 +225,13 @@ curl http://localhost:5182/health
 
 The project includes three test projects covering different testing levels:
 
-### Unit Tests (`ICMarket.UnitTests`) — 27 tests
+### Unit Tests (`ICMarket.UnitTests`) — 28 tests
 - **Handlers:** `FetchAndStoreBlockchainDataCommandHandler`, `GetAllBlockchainDataQueryHandler`, `GetBlockchainDataByNameQueryHandler`
 - **Validators:** `GetBlockchainDataByNameQueryValidator` (valid names, case-insensitive, invalid names)
 - **Mappings:** `BlockchainDataMappingExtensions` (ToDto, ToDtoList, all property mappings)
 - **Behaviors:** `ValidationBehavior` (no validators, valid request, invalid request, pipeline short-circuit)
 
-### Integration Tests (`ICMarket.IntegrationTests`)
+### Integration Tests (`ICMarket.IntegrationTests`) — 19 tests
 - **Health:** `/health` returns 200 + "Healthy"
 - **Swagger:** JSON valid, contains all 3 blockchain endpoints, UI accessible
 - **Endpoints:** GET empty, POST fetch, data persistence, GET by name, invalid name → 400, camelCase JSON
@@ -330,7 +330,7 @@ Indexes: composite `(Name, CreatedAt)` + `(CreatedAt)` for efficient querying.
 | 3 | CreatedAt timestamp, descending order | ✅ Entity + repository ordering |
 | 4 | HealthChecks route and basic CORS policy | ✅ `/health` + AllowAll CORS |
 | 5 | DI, logging, model mapping, serialization, validation | ✅ All implemented |
-| 6 | Integration, Functional, and Unit Test projects | ✅ 3 test projects (45+ tests) |
+| 6 | Integration, Functional, and Unit Test projects | ✅ 3 test projects (64+ tests) |
 | 7 | Runtime profiles: .NET, Docker (Linux) | ✅ launchSettings.json + Dockerfile |
 
 ### Framework Requirements
