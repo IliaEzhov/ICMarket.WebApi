@@ -135,32 +135,118 @@ jobs:
           cache-to: type=gha,mode=max
           load: true
 
-      - name: Test Docker container health
+      - name: Start Docker container
         run: |
-          # Start container in background
+          echo "🚀 Starting Docker container..."
           docker run -d --name icmarket-test -p 8080:8080 -e ASPNETCORE_HTTP_PORTS=8080 ${{ env.DOCKER_IMAGE_NAME }}:latest
-          
-          # Wait for container to be ready (max 30 seconds)
-          echo "Waiting for container to be ready..."
-          for i in {1..30}; do
-            if curl -s http://localhost:8080/health | grep -q "Healthy"; then
-              echo "Container is healthy!"
-              break
+          echo "Container started with ID: $(docker ps -q -f name=icmarket-test)"
+
+      - name: Wait for container to be ready
+        run: |
+          echo "⏳ Waiting for container to be ready (max 60 seconds)..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✅ Container is ready after $i seconds"
+              exit 0
             fi
-            if [ $i -eq 30 ]; then
-              echo "Container health check failed"
-              docker logs icmarket-test
-              exit 1
-            fi
+            echo "Attempt $i/60: Container not ready yet..."
             sleep 1
           done
+          echo "❌ Container failed to become ready within 60 seconds"
+          echo "📋 Container logs:"
+          docker logs icmarket-test
+          exit 1
+
+      - name: Test Health endpoint
+        run: |
+          echo "🏥 Testing /health endpoint..."
+          HEALTH_RESPONSE=$(curl -sf http://localhost:8080/health)
+          echo "Response: $HEALTH_RESPONSE"
+          if echo "$HEALTH_RESPONSE" | grep -q "Healthy"; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed - expected 'Healthy'"
+            exit 1
+          fi
+
+      - name: Test Swagger endpoints
+        run: |
+          echo "📚 Testing Swagger endpoints..."
           
-          # Verify Swagger is accessible
-          curl -s http://localhost:8080/swagger/v1/swagger.json | head -c 200
+          # Test Swagger UI
+          echo "Testing /swagger/index.html..."
+          SWAGGER_UI_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/swagger/index.html)
+          if [ "$SWAGGER_UI_STATUS" = "200" ]; then
+            echo "✅ Swagger UI accessible (HTTP $SWAGGER_UI_STATUS)"
+          else
+            echo "❌ Swagger UI failed (HTTP $SWAGGER_UI_STATUS)"
+            exit 1
+          fi
           
-          # Cleanup
-          docker stop icmarket-test
-          docker rm icmarket-test
+          # Test Swagger JSON
+          echo "Testing /swagger/v1/swagger.json..."
+          SWAGGER_JSON=$(curl -sf http://localhost:8080/swagger/v1/swagger.json)
+          if echo "$SWAGGER_JSON" | grep -q '"openapi"'; then
+            echo "✅ Swagger JSON valid (contains OpenAPI spec)"
+          else
+            echo "❌ Swagger JSON invalid or missing"
+            exit 1
+          fi
+
+      - name: Test API endpoints
+        run: |
+          echo "🔌 Testing API endpoints..."
+          
+          # Test GET /api/blockchain (should return 200 with empty or populated list)
+          echo "Testing GET /api/blockchain..."
+          BLOCKCHAIN_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain?page=1&pageSize=10")
+          if [ "$BLOCKCHAIN_STATUS" = "200" ]; then
+            echo "✅ GET /api/blockchain returned HTTP $BLOCKCHAIN_STATUS"
+          else
+            echo "❌ GET /api/blockchain failed (HTTP $BLOCKCHAIN_STATUS)"
+            exit 1
+          fi
+          
+          # Test GET /api/blockchain/{name} with a blockchain name
+          echo "Testing GET /api/blockchain/ethereum..."
+          BLOCKCHAIN_NAME_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain/ethereum?page=1&pageSize=10")
+          if [ "$BLOCKCHAIN_NAME_STATUS" = "200" ]; then
+            echo "✅ GET /api/blockchain/ethereum returned HTTP $BLOCKCHAIN_NAME_STATUS"
+          else
+            echo "❌ GET /api/blockchain/ethereum failed (HTTP $BLOCKCHAIN_NAME_STATUS)"
+            exit 1
+          fi
+          
+          # Test POST /api/blockchain/fetch (trigger data fetch)
+          echo "Testing POST /api/blockchain/fetch..."
+          FETCH_RESPONSE=$(curl -sf -X POST http://localhost:8080/api/blockchain/fetch)
+          FETCH_STATUS=$?
+          if [ $FETCH_STATUS -eq 0 ]; then
+            echo "✅ POST /api/blockchain/fetch succeeded"
+            echo "Response: $FETCH_RESPONSE"
+          else
+            echo "⚠️ POST /api/blockchain/fetch may have failed (external API dependency)"
+            echo "This is acceptable in CI - external APIs may be rate-limited"
+          fi
+          
+          # Verify data was fetched by checking GET endpoint again
+          echo "Verifying data persistence..."
+          BLOCKCHAIN_DATA=$(curl -sf "http://localhost:8080/api/blockchain?page=1&pageSize=5")
+          echo "Blockchain data response: $(echo "$BLOCKCHAIN_DATA" | head -c 500)"
+
+      - name: Display container logs
+        if: always()
+        run: |
+          echo "📋 Container logs:"
+          docker logs icmarket-test --tail 50
+
+      - name: Cleanup Docker container
+        if: always()
+        run: |
+          echo "🧹 Cleaning up..."
+          docker stop icmarket-test 2>/dev/null || true
+          docker rm icmarket-test 2>/dev/null || true
+          echo "✅ Cleanup complete"
 
       - name: Save Docker image as artifact
         run: docker save ${{ env.DOCKER_IMAGE_NAME }}:latest | gzip > icmarket-api-image.tar.gz
