@@ -20,7 +20,7 @@ public class GetAllBlockchainDataQueryHandlerTests
 	}
 
 	[Test]
-	public async Task Handle_ShouldReturnAllBlockchainData()
+	public async Task Handle_ShouldReturnPaginatedBlockchainData()
 	{
 		var entities = new List<BlockchainData>
 		{
@@ -29,37 +29,41 @@ public class GetAllBlockchainDataQueryHandlerTests
 		};
 
 		_repositoryMock
-			.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-			.ReturnsAsync(entities);
+			.Setup(r => r.GetAllAsync(1, 50, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((entities.AsEnumerable(), 2));
 
-		var result = (await _handler.Handle(new GetAllBlockchainDataQuery(), CancellationToken.None)).ToList();
+		var result = await _handler.Handle(new GetAllBlockchainDataQuery(), CancellationToken.None);
 
-		Assert.That(result, Has.Count.EqualTo(2));
-		Assert.That(result[0].Name, Is.EqualTo("BTC.main"));
-		Assert.That(result[1].Name, Is.EqualTo("ETH.main"));
+		Assert.That(result.Items.Count(), Is.EqualTo(2));
+		Assert.That(result.Items.First().Name, Is.EqualTo("BTC.main"));
+		Assert.That(result.Items.Last().Name, Is.EqualTo("ETH.main"));
+		Assert.That(result.TotalCount, Is.EqualTo(2));
+		Assert.That(result.Page, Is.EqualTo(1));
+		Assert.That(result.PageSize, Is.EqualTo(50));
 	}
 
 	[Test]
-	public async Task Handle_EmptyRepository_ShouldReturnEmptyList()
+	public async Task Handle_EmptyRepository_ShouldReturnEmptyResult()
 	{
 		_repositoryMock
-			.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-			.ReturnsAsync(Enumerable.Empty<BlockchainData>());
+			.Setup(r => r.GetAllAsync(1, 50, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((Enumerable.Empty<BlockchainData>(), 0));
 
-		var result = (await _handler.Handle(new GetAllBlockchainDataQuery(), CancellationToken.None)).ToList();
+		var result = await _handler.Handle(new GetAllBlockchainDataQuery(), CancellationToken.None);
 
-		Assert.That(result, Is.Empty);
+		Assert.That(result.Items, Is.Empty);
+		Assert.That(result.TotalCount, Is.EqualTo(0));
 	}
 
 	[Test]
 	public async Task Handle_ShouldCallRepositoryOnce()
 	{
 		_repositoryMock
-			.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-			.ReturnsAsync(Enumerable.Empty<BlockchainData>());
+			.Setup(r => r.GetAllAsync(1, 50, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((Enumerable.Empty<BlockchainData>(), 0));
 
 		await _handler.Handle(new GetAllBlockchainDataQuery(), CancellationToken.None);
 
-		_repositoryMock.Verify(r => r.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+		_repositoryMock.Verify(r => r.GetAllAsync(1, 50, It.IsAny<CancellationToken>()), Times.Once);
 	}
 }

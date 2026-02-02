@@ -6,6 +6,7 @@ using ICMarket.Domain.Entities;
 using ICMarket.FunctionalTests.Infrastructure;
 using Moq;
 
+
 namespace ICMarket.FunctionalTests;
 
 [TestFixture]
@@ -40,10 +41,11 @@ public class BlockchainWorkflowTests
 		Assert.That(fetchResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
 		var getResponse = await _client.GetAsync("/api/blockchain");
-		var data = await getResponse.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await getResponse.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(5));
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(5));
+		Assert.That(result.TotalCount, Is.EqualTo(5));
 	}
 
 	[Test]
@@ -78,10 +80,11 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var getResponse = await _client.GetAsync("/api/blockchain");
-		var data = await getResponse.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await getResponse.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(10));
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(10));
+		Assert.That(result.TotalCount, Is.EqualTo(10));
 	}
 
 	[Test]
@@ -95,12 +98,12 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync($"/api/blockchain/{BlockchainConstants.Names.EthMain}");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(1));
-		Assert.That(data![0].Name, Is.EqualTo(BlockchainConstants.Names.EthMain));
-		Assert.That(data[0].HighGasPrice, Is.EqualTo(30000000000));
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(1));
+		Assert.That(result.Items.First().Name, Is.EqualTo(BlockchainConstants.Names.EthMain));
+		Assert.That(result.Items.First().HighGasPrice, Is.EqualTo(30000000000));
 	}
 
 	[Test]
@@ -114,11 +117,11 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync("/api/blockchain/btc.main");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(1));
-		Assert.That(data![0].Name, Is.EqualTo(BlockchainConstants.Names.BtcMain));
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(1));
+		Assert.That(result.Items.First().Name, Is.EqualTo(BlockchainConstants.Names.BtcMain));
 	}
 
 	[Test]
@@ -177,12 +180,14 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync("/api/blockchain");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(2));
-		Assert.That(data![0].CreatedAt, Is.GreaterThanOrEqualTo(data[1].CreatedAt));
-		Assert.That(data[0].Height, Is.EqualTo(850000));
+		Assert.That(result, Is.Not.Null);
+		var items = result!.Items.ToList();
+		Assert.That(items, Has.Count.EqualTo(2));
+		Assert.That(items[0].CreatedAt, Is.GreaterThanOrEqualTo(items[1].CreatedAt));
+		Assert.That(items[0].Height, Is.EqualTo(850000));
+		Assert.That(result.TotalCount, Is.EqualTo(2));
 	}
 
 	[Test]
@@ -197,10 +202,10 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync("/api/blockchain");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data!.All(d => d.CreatedAt >= beforeFetch), Is.True);
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.All(d => d.CreatedAt >= beforeFetch), Is.True);
 	}
 
 	[Test]
@@ -238,10 +243,11 @@ public class BlockchainWorkflowTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync($"/api/blockchain/{BlockchainConstants.Names.EthMain}");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(3));
-		Assert.That(data!.All(d => d.Name == BlockchainConstants.Names.EthMain), Is.True);
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(3));
+		Assert.That(result.Items.All(d => d.Name == BlockchainConstants.Names.EthMain), Is.True);
+		Assert.That(result.TotalCount, Is.EqualTo(3));
 	}
 }

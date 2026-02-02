@@ -18,21 +18,35 @@ public class BlockchainDataRepository : IBlockchainDataRepository
 		_context = context;
 	}
 
-	public async Task<IEnumerable<BlockchainData>> GetAllAsync(CancellationToken cancellationToken = default)
+	public async Task<(IEnumerable<BlockchainData> Items, int TotalCount)> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default)
 	{
-		return await _context.BlockchainData
+		var query = _context.BlockchainData
 			.OrderByDescending(x => x.CreatedAt)
-			.AsNoTracking()
+			.AsNoTracking();
+
+		var totalCount = await query.CountAsync(cancellationToken);
+		var items = await query
+			.Skip((page - 1) * pageSize)
+			.Take(pageSize)
 			.ToListAsync(cancellationToken);
+
+		return (items, totalCount);
 	}
 
-	public async Task<IEnumerable<BlockchainData>> GetByBlockchainNameAsync(string name, CancellationToken cancellationToken = default)
+	public async Task<(IEnumerable<BlockchainData> Items, int TotalCount)> GetByBlockchainNameAsync(string name, int page, int pageSize, CancellationToken cancellationToken = default)
 	{
-		return await _context.BlockchainData
+		var query = _context.BlockchainData
 			.Where(x => EF.Functions.Collate(x.Name, "NOCASE") == name)
 			.OrderByDescending(x => x.CreatedAt)
-			.AsNoTracking()
+			.AsNoTracking();
+
+		var totalCount = await query.CountAsync(cancellationToken);
+		var items = await query
+			.Skip((page - 1) * pageSize)
+			.Take(pageSize)
 			.ToListAsync(cancellationToken);
+
+		return (items, totalCount);
 	}
 
 	public async Task AddAsync(BlockchainData entity, CancellationToken cancellationToken = default)

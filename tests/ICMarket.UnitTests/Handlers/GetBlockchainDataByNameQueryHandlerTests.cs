@@ -20,7 +20,7 @@ public class GetBlockchainDataByNameQueryHandlerTests
 	}
 
 	[Test]
-	public async Task Handle_ShouldReturnDataForSpecificBlockchain()
+	public async Task Handle_ShouldReturnPaginatedDataForSpecificBlockchain()
 	{
 		var entities = new List<BlockchainData>
 		{
@@ -29,36 +29,39 @@ public class GetBlockchainDataByNameQueryHandlerTests
 		};
 
 		_repositoryMock
-			.Setup(r => r.GetByBlockchainNameAsync("btc/main", It.IsAny<CancellationToken>()))
-			.ReturnsAsync(entities);
+			.Setup(r => r.GetByBlockchainNameAsync("btc/main", 1, 50, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((entities.AsEnumerable(), 2));
 
-		var result = (await _handler.Handle(new GetBlockchainDataByNameQuery("btc/main"), CancellationToken.None)).ToList();
+		var result = await _handler.Handle(new GetBlockchainDataByNameQuery("btc/main"), CancellationToken.None);
 
-		Assert.That(result, Has.Count.EqualTo(2));
-		Assert.That(result.All(d => d.Name == "BTC.main"), Is.True);
+		Assert.That(result.Items.Count(), Is.EqualTo(2));
+		Assert.That(result.Items.All(d => d.Name == "BTC.main"), Is.True);
+		Assert.That(result.TotalCount, Is.EqualTo(2));
+		Assert.That(result.Page, Is.EqualTo(1));
 	}
 
 	[Test]
 	public async Task Handle_ShouldPassCorrectNameToRepository()
 	{
 		_repositoryMock
-			.Setup(r => r.GetByBlockchainNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-			.ReturnsAsync(Enumerable.Empty<BlockchainData>());
+			.Setup(r => r.GetByBlockchainNameAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync((Enumerable.Empty<BlockchainData>(), 0));
 
 		await _handler.Handle(new GetBlockchainDataByNameQuery("eth/main"), CancellationToken.None);
 
-		_repositoryMock.Verify(r => r.GetByBlockchainNameAsync("eth/main", It.IsAny<CancellationToken>()), Times.Once);
+		_repositoryMock.Verify(r => r.GetByBlockchainNameAsync("eth/main", 1, 50, It.IsAny<CancellationToken>()), Times.Once);
 	}
 
 	[Test]
-	public async Task Handle_NoData_ShouldReturnEmptyList()
+	public async Task Handle_NoData_ShouldReturnEmptyResult()
 	{
 		_repositoryMock
-			.Setup(r => r.GetByBlockchainNameAsync("ltc/main", It.IsAny<CancellationToken>()))
-			.ReturnsAsync(Enumerable.Empty<BlockchainData>());
+			.Setup(r => r.GetByBlockchainNameAsync("ltc/main", 1, 50, It.IsAny<CancellationToken>()))
+			.ReturnsAsync((Enumerable.Empty<BlockchainData>(), 0));
 
-		var result = (await _handler.Handle(new GetBlockchainDataByNameQuery("ltc/main"), CancellationToken.None)).ToList();
+		var result = await _handler.Handle(new GetBlockchainDataByNameQuery("ltc/main"), CancellationToken.None);
 
-		Assert.That(result, Is.Empty);
+		Assert.That(result.Items, Is.Empty);
+		Assert.That(result.TotalCount, Is.EqualTo(0));
 	}
 }

@@ -40,32 +40,36 @@ public class BlockchainController : ControllerBase
 	}
 
 	/// <summary>
-	/// Retrieves all stored blockchain data history, ordered by CreatedAt descending.
+	/// Retrieves paginated blockchain data history, ordered by CreatedAt descending.
 	/// </summary>
-	/// <returns>All blockchain data records.</returns>
+	/// <param name="page">Page number (1-based, default: 1).</param>
+	/// <param name="pageSize">Records per page (default: 50, max: 200).</param>
+	/// <returns>Paginated blockchain data records with metadata.</returns>
 	[HttpGet]
-	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
-	public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+	[ProducesResponseType(typeof(PaginatedResult<BlockchainDataDto>), StatusCodes.Status200OK)]
+	public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
 	{
-		_logger.LogInformation("Retrieving all blockchain data history");
-		var result = await _mediator.Send(new GetAllBlockchainDataQuery(), cancellationToken);
-		_logger.LogInformation("Retrieved {Count} blockchain records", result.Count());
+		_logger.LogInformation("Retrieving blockchain data history (page {Page}, pageSize {PageSize})", page, pageSize);
+		var result = await _mediator.Send(new GetAllBlockchainDataQuery(page, pageSize), cancellationToken);
+		_logger.LogInformation("Retrieved {Count} of {Total} blockchain records", result.Items.Count(), result.TotalCount);
 		return Ok(result);
 	}
 
 	/// <summary>
-	/// Retrieves stored blockchain data history filtered by blockchain name.
+	/// Retrieves paginated blockchain data history filtered by blockchain name.
 	/// </summary>
 	/// <param name="name">Blockchain name (e.g., "BTC.main", "ETH.main"). Case-insensitive.</param>
-	/// <returns>Blockchain data records for the specified blockchain.</returns>
+	/// <param name="page">Page number (1-based, default: 1).</param>
+	/// <param name="pageSize">Records per page (default: 50, max: 200).</param>
+	/// <returns>Paginated blockchain data records with metadata.</returns>
 	[HttpGet("{name}")]
-	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
+	[ProducesResponseType(typeof(PaginatedResult<BlockchainDataDto>), StatusCodes.Status200OK)]
 	[ProducesResponseType(StatusCodes.Status400BadRequest)]
-	public async Task<IActionResult> GetByName(string name, CancellationToken cancellationToken)
+	public async Task<IActionResult> GetByName(string name, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
 	{
-		_logger.LogInformation("Retrieving blockchain data for {Name}", name);
-		var result = await _mediator.Send(new GetBlockchainDataByNameQuery(name), cancellationToken);
-		_logger.LogInformation("Retrieved {Count} records for {Name}", result.Count(), name);
+		_logger.LogInformation("Retrieving blockchain data for {Name} (page {Page}, pageSize {PageSize})", name, page, pageSize);
+		var result = await _mediator.Send(new GetBlockchainDataByNameQuery(name, page, pageSize), cancellationToken);
+		_logger.LogInformation("Retrieved {Count} of {Total} records for {Name}", result.Items.Count(), result.TotalCount, name);
 		return Ok(result);
 	}
 }
