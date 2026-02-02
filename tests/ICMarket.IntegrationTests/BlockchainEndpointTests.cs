@@ -35,9 +35,10 @@ public class BlockchainEndpointTests
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Is.Empty);
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items, Is.Empty);
+		Assert.That(result.TotalCount, Is.EqualTo(0));
 	}
 
 	[Test]
@@ -77,10 +78,10 @@ public class BlockchainEndpointTests
 		await _client.PostAsync("/api/blockchain/fetch", null);
 
 		var response = await _client.GetAsync("/api/blockchain");
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
 
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(sampleData.Count));
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(sampleData.Count));
 	}
 
 	[Test]
@@ -97,10 +98,10 @@ public class BlockchainEndpointTests
 
 		Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
-		var data = await response.Content.ReadFromJsonAsync<List<BlockchainDataDto>>();
-		Assert.That(data, Is.Not.Null);
-		Assert.That(data, Has.Count.EqualTo(1));
-		Assert.That(data![0].Name, Is.EqualTo(BlockchainConstants.Names.BtcMain));
+		var result = await response.Content.ReadFromJsonAsync<PaginatedResult<BlockchainDataDto>>();
+		Assert.That(result, Is.Not.Null);
+		Assert.That(result!.Items.Count(), Is.EqualTo(1));
+		Assert.That(result.Items.First().Name, Is.EqualTo(BlockchainConstants.Names.BtcMain));
 	}
 
 	[Test]

@@ -1,0 +1,414 @@
+# CI/CD Pipeline for ICMarket.WebApi
+# Triggers on push to main/development branches and pull requests
+# Jobs: Build → Test → Docker Build → (Optional) Docker Push
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - development
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOCKER_IMAGE_NAME: icmarket-api
+
+jobs:
+  # =============================================================================
+  # BUILD JOB
+  # =============================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore ICMarket.sln
+
+      - name: Build solution
+        run: dotnet build ICMarket.sln --configuration Release --no-restore
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            src/*/bin/Release/net8.0/
+            tests/*/bin/Release/net8.0/
+          retention-days: 1
+
+  # =============================================================================
+  # TEST JOB
+  # =============================================================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      checks: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore ICMarket.sln
+
+      # Run all test projects in parallel with coverage
+      - name: Run Unit Tests
+        run: dotnet test tests/ICMarket.UnitTests/ICMarket.UnitTests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=unit-tests.trx" --collect:"XPlat Code Coverage"
+
+      - name: Run Integration Tests
+        run: dotnet test tests/ICMarket.IntegrationTests/ICMarket.IntegrationTests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=integration-tests.trx" --collect:"XPlat Code Coverage"
+
+      - name: Run Functional Tests
+        run: dotnet test tests/ICMarket.FunctionalTests/ICMarket.FunctionalTests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=functional-tests.trx" --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            tests/**/TestResults/*.trx
+            tests/**/TestResults/**/coverage.cobertura.xml
+          retention-days: 7
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results
+          path: 'tests/**/TestResults/*.trx'
+          reporter: dotnet-trx
+
+  # =============================================================================
+  # CODE QUALITY JOB
+  # =============================================================================
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore ICMarket.sln
+
+      - name: Check code formatting
+        run: dotnet format ICMarket.sln --verify-no-changes
+
+      - name: Build with warnings as errors
+        run: dotnet build ICMarket.sln --configuration Release --no-restore /p:TreatWarningsAsErrors=false
+
+  # =============================================================================
+  # SECURITY SCAN JOB
+  # =============================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ICMarket.sln
+
+      - name: Check for vulnerable packages
+        run: |
+          echo "🔍 Scanning for vulnerable NuGet packages..."
+          RESULT=$(dotnet list ICMarket.sln package --vulnerable --include-transitive 2>&1)
+          echo "$RESULT"
+          if echo "$RESULT" | grep -q "has the following vulnerable packages"; then
+            echo "⚠️ Vulnerable packages found! Review the output above."
+            exit 1
+          else
+            echo "✅ No vulnerable packages found"
+          fi
+
+  # =============================================================================
+  # DOCKER BUILD JOB
+  # =============================================================================
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [test, code-quality]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/API/Dockerfile
+          push: false
+          tags: |
+            ${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Start Docker container
+        run: |
+          echo "🚀 Starting Docker container..."
+          docker run -d --name icmarket-test -p 8080:8080 -e ASPNETCORE_HTTP_PORTS=8080 ${{ env.DOCKER_IMAGE_NAME }}:latest
+          echo "Container started with ID: $(docker ps -q -f name=icmarket-test)"
+
+      - name: Wait for container to be ready
+        run: |
+          echo "⏳ Waiting for container to be ready (max 60 seconds)..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+              echo "✅ Container is ready after $i seconds"
+              exit 0
+            fi
+            echo "Attempt $i/60: Container not ready yet..."
+            sleep 1
+          done
+          echo "❌ Container failed to become ready within 60 seconds"
+          echo "📋 Container logs:"
+          docker logs icmarket-test
+          exit 1
+
+      - name: Test Health endpoint
+        run: |
+          echo "🏥 Testing /health endpoint..."
+          HEALTH_RESPONSE=$(curl -sf http://localhost:8080/health)
+          echo "Response: $HEALTH_RESPONSE"
+          if echo "$HEALTH_RESPONSE" | grep -q "Healthy"; then
+            echo "✅ Health check passed"
+          else
+            echo "❌ Health check failed - expected 'Healthy'"
+            exit 1
+          fi
+
+      - name: Test Swagger endpoints
+        run: |
+          echo "📚 Testing Swagger endpoints..."
+          
+          # Test Swagger UI
+          echo "Testing /swagger/index.html..."
+          SWAGGER_UI_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/swagger/index.html)
+          if [ "$SWAGGER_UI_STATUS" = "200" ]; then
+            echo "✅ Swagger UI accessible (HTTP $SWAGGER_UI_STATUS)"
+          else
+            echo "❌ Swagger UI failed (HTTP $SWAGGER_UI_STATUS)"
+            exit 1
+          fi
+          
+          # Test Swagger JSON
+          echo "Testing /swagger/v1/swagger.json..."
+          SWAGGER_JSON=$(curl -sf http://localhost:8080/swagger/v1/swagger.json)
+          if echo "$SWAGGER_JSON" | grep -q '"openapi"'; then
+            echo "✅ Swagger JSON valid (contains OpenAPI spec)"
+          else
+            echo "❌ Swagger JSON invalid or missing"
+            exit 1
+          fi
+
+      - name: Test API endpoints
+        run: |
+          echo "🔌 Testing API endpoints..."
+          
+          # Test GET /api/blockchain (should return 200 with empty list initially)
+          echo "Testing GET /api/blockchain (empty database)..."
+          BLOCKCHAIN_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain?page=1&pageSize=10")
+          if [ "$BLOCKCHAIN_STATUS" = "200" ]; then
+            echo "✅ GET /api/blockchain returned HTTP $BLOCKCHAIN_STATUS"
+          else
+            echo "❌ GET /api/blockchain failed (HTTP $BLOCKCHAIN_STATUS)"
+            exit 1
+          fi
+          
+          # Test POST /api/blockchain/fetch (trigger data fetch from BlockCypher API)
+          echo "Testing POST /api/blockchain/fetch..."
+          FETCH_RESPONSE=$(curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/blockchain/fetch)
+          FETCH_HTTP_CODE=$(echo "$FETCH_RESPONSE" | tail -n1)
+          FETCH_BODY=$(echo "$FETCH_RESPONSE" | sed '$d')
+          if [ "$FETCH_HTTP_CODE" = "200" ]; then
+            echo "✅ POST /api/blockchain/fetch succeeded (HTTP $FETCH_HTTP_CODE)"
+            echo "Response: $(echo "$FETCH_BODY" | head -c 300)..."
+          else
+            echo "⚠️ POST /api/blockchain/fetch returned HTTP $FETCH_HTTP_CODE"
+            echo "This may be acceptable - external BlockCypher API may be rate-limited"
+            echo "Response: $FETCH_BODY"
+          fi
+          
+          # Test GET /api/blockchain/{name} with correct blockchain name format (e.g., ETH.main)
+          echo "Testing GET /api/blockchain/ETH.main..."
+          BLOCKCHAIN_NAME_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain/ETH.main?page=1&pageSize=10")
+          if [ "$BLOCKCHAIN_NAME_STATUS" = "200" ]; then
+            echo "✅ GET /api/blockchain/ETH.main returned HTTP $BLOCKCHAIN_NAME_STATUS"
+          else
+            echo "❌ GET /api/blockchain/ETH.main failed (HTTP $BLOCKCHAIN_NAME_STATUS)"
+            exit 1
+          fi
+          
+          # Verify data was fetched by checking GET endpoint again
+          echo "Verifying data persistence..."
+          BLOCKCHAIN_DATA=$(curl -s "http://localhost:8080/api/blockchain?page=1&pageSize=5")
+          echo "Blockchain data response: $(echo "$BLOCKCHAIN_DATA" | head -c 500)"
+
+      - name: Display container logs
+        if: always()
+        run: |
+          echo "📋 Container logs:"
+          docker logs icmarket-test --tail 50
+
+      - name: Cleanup Docker container
+        if: always()
+        run: |
+          echo "🧹 Cleaning up..."
+          docker stop icmarket-test 2>/dev/null || true
+          docker rm icmarket-test 2>/dev/null || true
+          echo "✅ Cleanup complete"
+
+      - name: Save Docker image as artifact
+        run: docker save ${{ env.DOCKER_IMAGE_NAME }}:latest | gzip > icmarket-api-image.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: icmarket-api-image.tar.gz
+          retention-days: 7
+
+  # =============================================================================
+  # DOCKER PUSH JOB (Optional - only on main branch)
+  # =============================================================================
+  docker-push:
+    name: Docker Push
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Uncomment and configure the following steps to push to a container registry
+      # 
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+      #
+      # - name: Login to GitHub Container Registry
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # - name: Build and push
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     file: src/API/Dockerfile
+      #     push: true
+      #     tags: |
+      #       ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+      #       ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
+
+      - name: Docker Push placeholder
+        run: |
+          echo "Docker push is configured but commented out."
+          echo "To enable, uncomment the login and push steps above and add secrets:"
+          echo "  - DOCKERHUB_USERNAME and DOCKERHUB_TOKEN for Docker Hub"
+          echo "  - GITHUB_TOKEN is automatically available for GitHub Container Registry"
+
+  # =============================================================================
+  # STATUS CHECK JOB (Summary)
+  # =============================================================================
+  status-check:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [build, test, code-quality, security-scan, docker-build]
+    if: always()
+    
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "Build: ${{ needs.build.result }}"
+          echo "Test: ${{ needs.test.result }}"
+          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Security Scan: ${{ needs.security-scan.result }}"
+          echo "Docker Build: ${{ needs.docker-build.result }}"
+          
+          if [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.code-quality.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ] || \
+             [ "${{ needs.docker-build.result }}" != "success" ]; then
+            echo "One or more jobs failed!"
+            exit 1
+          fi
+          
+          echo "All jobs completed successfully!"

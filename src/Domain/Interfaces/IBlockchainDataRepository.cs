@@ -8,15 +8,15 @@ namespace ICMarket.Domain.Interfaces;
 public interface IBlockchainDataRepository
 {
 	/// <summary>
-	/// Retrieves all blockchain data records ordered by <see cref="BaseEntity.CreatedAt"/> descending.
+	/// Retrieves a paginated set of blockchain data records ordered by <see cref="BaseEntity.CreatedAt"/> descending.
 	/// </summary>
-	Task<IEnumerable<BlockchainData>> GetAllAsync(CancellationToken cancellationToken = default);
+	Task<(IEnumerable<BlockchainData> Items, int TotalCount)> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 
 	/// <summary>
-	/// Retrieves blockchain data records filtered by blockchain name (case-insensitive),
+	/// Retrieves a paginated set of blockchain data records filtered by blockchain name (case-insensitive),
 	/// ordered by <see cref="BaseEntity.CreatedAt"/> descending.
 	/// </summary>
-	Task<IEnumerable<BlockchainData>> GetByBlockchainNameAsync(string name, CancellationToken cancellationToken = default);
+	Task<(IEnumerable<BlockchainData> Items, int TotalCount)> GetByBlockchainNameAsync(string name, int page, int pageSize, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Adds a single <see cref="BlockchainData"/> entity to the repository.

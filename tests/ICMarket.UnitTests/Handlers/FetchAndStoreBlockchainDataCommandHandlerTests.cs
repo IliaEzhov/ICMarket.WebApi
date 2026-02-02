@@ -13,6 +13,7 @@ public class FetchAndStoreBlockchainDataCommandHandlerTests
 	private Mock<IBlockchainService> _blockchainServiceMock;
 	private Mock<IBlockchainDataRepository> _repositoryMock;
 	private Mock<IUnitOfWork> _unitOfWorkMock;
+	private Mock<ICacheInvalidator> _cacheInvalidatorMock;
 	private FetchAndStoreBlockchainDataCommandHandler _handler;
 
 	[SetUp]
@@ -21,10 +22,12 @@ public class FetchAndStoreBlockchainDataCommandHandlerTests
 		_blockchainServiceMock = new Mock<IBlockchainService>();
 		_repositoryMock = new Mock<IBlockchainDataRepository>();
 		_unitOfWorkMock = new Mock<IUnitOfWork>();
+		_cacheInvalidatorMock = new Mock<ICacheInvalidator>();
 		_handler = new FetchAndStoreBlockchainDataCommandHandler(
 			_blockchainServiceMock.Object,
 			_repositoryMock.Object,
 			_unitOfWorkMock.Object,
+			_cacheInvalidatorMock.Object,
 			Mock.Of<ILogger<FetchAndStoreBlockchainDataCommandHandler>>());
 	}
 

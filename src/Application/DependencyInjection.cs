@@ -1,6 +1,8 @@
 using System.Reflection;
 using FluentValidation;
 using ICMarket.Application.Behaviors;
+using ICMarket.Application.Interfaces;
+using ICMarket.Application.Services;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +23,13 @@ public static class DependencyInjection
 
 		services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 		services.AddValidatorsFromAssembly(assembly);
+
+		// Register pipeline behaviors (order matters: logging → caching → validation → handler)
+		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+		services.AddSingleton<ICacheInvalidator, CacheInvalidator>();
 
 		return services;
 	}

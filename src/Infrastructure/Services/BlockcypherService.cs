@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using ICMarket.Application.Interfaces;
 using ICMarket.Domain.Entities;
 using ICMarket.Infrastructure.Configuration;
+using ICMarket.Infrastructure.Mappings;
 using ICMarket.Infrastructure.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -53,42 +54,12 @@ public class BlockcypherService : IBlockchainService
 				return null;
 			}
 
-			return MapToEntity(response);
+			return response.ToEntity();
 		}
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to fetch blockchain data from {Endpoint}", endpoint);
 			return null;
 		}
-	}
-
-	private static BlockchainData MapToEntity(BlockcypherResponse response)
-	{
-		return new BlockchainData
-		{
-			Id = Guid.NewGuid(),
-			CreatedAt = DateTime.UtcNow,
-			Name = response.Name,
-			Height = response.Height,
-			Hash = response.Hash,
-			Time = response.Time,
-			LatestUrl = response.LatestUrl,
-			PreviousHash = response.PreviousHash,
-			PreviousUrl = response.PreviousUrl,
-			PeerCount = response.PeerCount,
-			UnconfirmedCount = response.UnconfirmedCount,
-			LastForkHeight = response.LastForkHeight,
-			LastForkHash = response.LastForkHash,
-			HighFeePerKb = response.HighFeePerKb,
-			MediumFeePerKb = response.MediumFeePerKb,
-			LowFeePerKb = response.LowFeePerKb,
-			HighGasPrice = response.HighGasPrice,
-			MediumGasPrice = response.MediumGasPrice,
-			LowGasPrice = response.LowGasPrice,
-			HighPriorityFee = response.HighPriorityFee,
-			MediumPriorityFee = response.MediumPriorityFee,
-			LowPriorityFee = response.LowPriorityFee,
-			BaseFee = response.BaseFee
-		};
 	}
 }

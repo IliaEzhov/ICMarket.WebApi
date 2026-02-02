@@ -16,32 +16,44 @@ public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAn
 	private readonly IBlockchainService _blockchainService;
 	private readonly IBlockchainDataRepository _repository;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ICacheInvalidator _cacheInvalidator;
 	private readonly ILogger<FetchAndStoreBlockchainDataCommandHandler> _logger;
 
 	public FetchAndStoreBlockchainDataCommandHandler(
 		IBlockchainService blockchainService,
 		IBlockchainDataRepository repository,
 		IUnitOfWork unitOfWork,
+		ICacheInvalidator cacheInvalidator,
 		ILogger<FetchAndStoreBlockchainDataCommandHandler> logger)
 	{
 		_blockchainService = blockchainService;
 		_repository = repository;
 		_unitOfWork = unitOfWork;
+		_cacheInvalidator = cacheInvalidator;
 		_logger = logger;
 	}
 
 	public async Task<IEnumerable<BlockchainDataDto>> Handle(FetchAndStoreBlockchainDataCommand request, CancellationToken cancellationToken)
 	{
-		_logger.LogInformation("Fetching blockchain data from all configured endpoints");
-		var blockchainData = await _blockchainService.FetchAllBlockchainDataAsync(cancellationToken);
+		try
+		{
+			_logger.LogInformation("Fetching blockchain data from all configured endpoints");
+			var blockchainData = await _blockchainService.FetchAllBlockchainDataAsync(cancellationToken);
 
-		var dataList = blockchainData.ToList();
-		_logger.LogInformation("Fetched {Count} blockchain records, persisting to database", dataList.Count);
+			var dataList = blockchainData.ToList();
+			_logger.LogInformation("Fetched {Count} blockchain records, persisting to database", dataList.Count);
 
-		await _repository.AddRangeAsync(dataList, cancellationToken);
-		await _unitOfWork.SaveChangesAsync(cancellationToken);
+			await _repository.AddRangeAsync(dataList, cancellationToken);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-		_logger.LogInformation("Successfully persisted {Count} blockchain records", dataList.Count);
-		return dataList.ToDtoList();
+			_cacheInvalidator.InvalidateAll();
+			_logger.LogInformation("Successfully persisted {Count} blockchain records and invalidated cache", dataList.Count);
+			return dataList.ToDtoList();
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogError(ex, "Failed to fetch and store blockchain data");
+			throw;
+		}
 	}
 }

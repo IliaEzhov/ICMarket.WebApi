@@ -1,5 +1,6 @@
 using ICMarket.Application.DTOs;
 using ICMarket.Application.Mappings;
+using ICMarket.Common.Constants;
 using ICMarket.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -7,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace ICMarket.Application.Queries.GetAllBlockchainData;
 
 /// <summary>
-/// Handles <see cref="GetAllBlockchainDataQuery"/> by retrieving all blockchain data from the repository.
+/// Handles <see cref="GetAllBlockchainDataQuery"/> by retrieving paginated blockchain data from the repository.
 /// </summary>
-public class GetAllBlockchainDataQueryHandler : IRequestHandler<GetAllBlockchainDataQuery, IEnumerable<BlockchainDataDto>>
+public class GetAllBlockchainDataQueryHandler : IRequestHandler<GetAllBlockchainDataQuery, PaginatedResult<BlockchainDataDto>>
 {
 	private readonly IBlockchainDataRepository _repository;
 	private readonly ILogger<GetAllBlockchainDataQueryHandler> _logger;
@@ -20,11 +21,29 @@ public class GetAllBlockchainDataQueryHandler : IRequestHandler<GetAllBlockchain
 		_logger = logger;
 	}
 
-	public async Task<IEnumerable<BlockchainDataDto>> Handle(GetAllBlockchainDataQuery request, CancellationToken cancellationToken)
+	public async Task<PaginatedResult<BlockchainDataDto>> Handle(GetAllBlockchainDataQuery request, CancellationToken cancellationToken)
 	{
-		_logger.LogInformation("Querying all blockchain data");
-		var data = await _repository.GetAllAsync(cancellationToken);
-		_logger.LogInformation("Retrieved {Count} blockchain records", data.Count());
-		return data.ToDtoList();
+		try
+		{
+			var page = Math.Max(1, request.Page);
+			var pageSize = Math.Clamp(request.PageSize, 1, ApiConstants.Pagination.MaxPageSize);
+
+			_logger.LogInformation("Querying all blockchain data (page {Page}, pageSize {PageSize})", page, pageSize);
+			var (items, totalCount) = await _repository.GetAllAsync(page, pageSize, cancellationToken);
+			_logger.LogInformation("Retrieved {Count} of {Total} blockchain records", items.Count(), totalCount);
+
+			return new PaginatedResult<BlockchainDataDto>
+			{
+				Items = items.ToDtoList(),
+				Page = page,
+				PageSize = pageSize,
+				TotalCount = totalCount
+			};
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogError(ex, "Failed to retrieve all blockchain data (page {Page}, pageSize {PageSize})", request.Page, request.PageSize);
+			throw;
+		}
 	}
 }

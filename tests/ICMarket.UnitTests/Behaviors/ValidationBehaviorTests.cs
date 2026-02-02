@@ -15,9 +15,9 @@ public class ValidationBehaviorTests
 	public async Task Handle_NoValidators_ShouldCallNext()
 	{
 		var validators = Enumerable.Empty<IValidator<GetBlockchainDataByNameQuery>>();
-		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, IEnumerable<BlockchainDataDto>>(validators);
+		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, PaginatedResult<BlockchainDataDto>>(validators);
 
-		var expectedResult = new List<BlockchainDataDto> { new() { Name = "BTC.main" } };
+		var expectedResult = new PaginatedResult<BlockchainDataDto> { Items = new List<BlockchainDataDto> { new() { Name = "BTC.main" } }, Page = 1, PageSize = 50, TotalCount = 1 };
 		var nextCalled = false;
 
 		var result = await behavior.Handle(
@@ -25,7 +25,7 @@ public class ValidationBehaviorTests
 			() =>
 			{
 				nextCalled = true;
-				return Task.FromResult<IEnumerable<BlockchainDataDto>>(expectedResult);
+				return Task.FromResult(expectedResult);
 			},
 			CancellationToken.None);
 
@@ -42,9 +42,9 @@ public class ValidationBehaviorTests
 			.ReturnsAsync(new ValidationResult());
 
 		var validators = new[] { validatorMock.Object };
-		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, IEnumerable<BlockchainDataDto>>(validators);
+		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, PaginatedResult<BlockchainDataDto>>(validators);
 
-		var expectedResult = new List<BlockchainDataDto> { new() { Name = "BTC.main" } };
+		var expectedResult = new PaginatedResult<BlockchainDataDto> { Items = new List<BlockchainDataDto> { new() { Name = "BTC.main" } }, Page = 1, PageSize = 50, TotalCount = 1 };
 		var nextCalled = false;
 
 		var result = await behavior.Handle(
@@ -52,7 +52,7 @@ public class ValidationBehaviorTests
 			() =>
 			{
 				nextCalled = true;
-				return Task.FromResult<IEnumerable<BlockchainDataDto>>(expectedResult);
+				return Task.FromResult(expectedResult);
 			},
 			CancellationToken.None);
 
@@ -74,12 +74,12 @@ public class ValidationBehaviorTests
 			.ReturnsAsync(new ValidationResult(failures));
 
 		var validators = new[] { validatorMock.Object };
-		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, IEnumerable<BlockchainDataDto>>(validators);
+		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, PaginatedResult<BlockchainDataDto>>(validators);
 
 		Assert.ThrowsAsync<ValidationException>(async () =>
 			await behavior.Handle(
 				new GetBlockchainDataByNameQuery(string.Empty),
-				() => Task.FromResult<IEnumerable<BlockchainDataDto>>(new List<BlockchainDataDto>()),
+				() => Task.FromResult(new PaginatedResult<BlockchainDataDto>()),
 				CancellationToken.None));
 	}
 
@@ -97,7 +97,7 @@ public class ValidationBehaviorTests
 			.ReturnsAsync(new ValidationResult(failures));
 
 		var validators = new[] { validatorMock.Object };
-		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, IEnumerable<BlockchainDataDto>>(validators);
+		var behavior = new ValidationBehavior<GetBlockchainDataByNameQuery, PaginatedResult<BlockchainDataDto>>(validators);
 
 		var nextCalled = false;
 
@@ -107,7 +107,7 @@ public class ValidationBehaviorTests
 				() =>
 				{
 					nextCalled = true;
-					return Task.FromResult<IEnumerable<BlockchainDataDto>>(new List<BlockchainDataDto>());
+					return Task.FromResult(new PaginatedResult<BlockchainDataDto>());
 				},
 				CancellationToken.None));
 

@@ -12,6 +12,8 @@ A blockchain data aggregator Web API built with ASP.NET Core 8 and Clean Archite
 - [Design Patterns](#design-patterns)
 - [Testing](#testing)
 - [Docker](#docker)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Security & Performance](#security--performance)
 - [Implementation Details](#implementation-details)
 - [Requirements Checklist](#requirements-checklist)
 
@@ -28,6 +30,9 @@ A blockchain data aggregator Web API built with ASP.NET Core 8 and Clean Archite
 | Testing | NUnit, Moq, Microsoft.AspNetCore.Mvc.Testing |
 | Containerization | Docker (Linux) |
 | API Documentation | Swagger / OpenAPI |
+| Rate Limiting | .NET 8 Built-in RateLimiter |
+| Caching | In-Memory Cache (IMemoryCache) |
+| CI/CD | GitHub Actions |
 
 ## Architecture
 
@@ -99,8 +104,8 @@ ICMarket.WebApi/
 │       └── Constants/                # BlockchainConstants, DatabaseConstants, ApiConstants
 │
 ├── tests/
-│   ├── ICMarket.UnitTests/           # 27 NUnit tests (handlers, validators, mappings)
-│   ├── ICMarket.IntegrationTests/    # Integration tests (health, swagger, endpoints)
+│   ├── ICMarket.UnitTests/           # 37 NUnit tests (handlers, validators, behaviors)
+│   ├── ICMarket.IntegrationTests/    # 19 integration tests (health, swagger, endpoints)
 │   └── ICMarket.FunctionalTests/     # 18 end-to-end workflow tests
 │
 ├── docker-compose.yml                # Container orchestration
@@ -217,7 +222,7 @@ curl http://localhost:5182/health
 | **CQRS** | Commands (write) and Queries (read) separated via MediatR |
 | **Repository** | `IBlockchainDataRepository` / `BlockchainDataRepository` |
 | **Unit of Work** | `IUnitOfWork` implemented by `AppDbContext` |
-| **Pipeline Behavior** | `ValidationBehavior<TRequest, TResponse>` for automatic FluentValidation |
+| **Pipeline Behaviors** | `ValidationBehavior`, `LoggingBehavior`, `CachingBehavior` (MediatR pipeline) |
 | **Options Pattern** | `BlockcypherSettings` bound from `appsettings.json` |
 | **Dependency Injection** | Layer-specific extension methods (`AddApplication()`, `AddInfrastructure()`) |
 
@@ -225,13 +230,13 @@ curl http://localhost:5182/health
 
 The project includes three test projects covering different testing levels:
 
-### Unit Tests (`ICMarket.UnitTests`) — 27 tests
+### Unit Tests (`ICMarket.UnitTests`) — 37 tests
 - **Handlers:** `FetchAndStoreBlockchainDataCommandHandler`, `GetAllBlockchainDataQueryHandler`, `GetBlockchainDataByNameQueryHandler`
 - **Validators:** `GetBlockchainDataByNameQueryValidator` (valid names, case-insensitive, invalid names)
 - **Mappings:** `BlockchainDataMappingExtensions` (ToDto, ToDtoList, all property mappings)
-- **Behaviors:** `ValidationBehavior` (no validators, valid request, invalid request, pipeline short-circuit)
+- **Behaviors:** `ValidationBehavior`, `LoggingBehavior`, `CachingBehavior` (cache hit, cache miss, non-cacheable requests, expiration)
 
-### Integration Tests (`ICMarket.IntegrationTests`)
+### Integration Tests (`ICMarket.IntegrationTests`) — 19 tests
 - **Health:** `/health` returns 200 + "Healthy"
 - **Swagger:** JSON valid, contains all 3 blockchain endpoints, UI accessible
 - **Endpoints:** GET empty, POST fetch, data persistence, GET by name, invalid name → 400, camelCase JSON
@@ -242,6 +247,59 @@ The project includes three test projects covering different testing levels:
 - **Validation:** Empty/invalid names → 400, valid names case-insensitive → 200
 
 All test projects use `WebApplicationFactory<Program>` with in-memory SQLite and mocked `IBlockchainService` to avoid external HTTP calls.
+
+## Security & Performance
+
+### CORS (Configurable)
+
+CORS is configured per environment via `appsettings.json`. Production restricts origins, methods, and headers:
+
+```json
+{
+  "Cors": {
+    "AllowedOrigins": ["https://yourdomain.com"],
+    "AllowedMethods": ["GET", "POST"],
+    "AllowedHeaders": ["Content-Type"]
+  }
+}
+```
+
+For development, use `["*"]` to allow all origins/methods/headers.
+
+### Rate Limiting
+
+Built-in .NET 8 rate limiting with two policies:
+
+| Policy | Limit | Window | Applied To |
+|--------|-------|--------|------------|
+| **Default** | 100 requests | 60 seconds | All endpoints |
+| **Strict** | 5 requests | 60 seconds | `POST /api/blockchain/fetch` |
+
+Configurable via `appsettings.json`:
+
+```json
+{
+  "RateLimiting": {
+    "PermitLimit": 100,
+    "WindowInSeconds": 60,
+    "FetchPermitLimit": 5,
+    "FetchWindowInSeconds": 60
+  }
+}
+```
+
+Exceeding the limit returns `HTTP 429 Too Many Requests`.
+
+### In-Memory Caching
+
+Query responses are cached using a MediatR pipeline behavior:
+
+- **Cached Queries:** `GetAllBlockchainDataQuery`, `GetBlockchainDataByNameQuery`
+- **Cache Duration:** 5 minutes (configurable)
+- **Cache Invalidation:** Automatic when `POST /api/blockchain/fetch` completes successfully
+- **Pattern:** `ICacheableQuery` marker interface + `CachingBehavior<TRequest, TResponse>`
+
+The caching pipeline uses `CancellationChangeToken` for efficient bulk invalidation.
 
 ## Docker
 
@@ -261,10 +319,52 @@ docker run -p 8080:8080 icmarket-api
 docker compose up --build
 ```
 
-The API will be available at http://localhost:8080 with:
-- SQLite persistence via a named Docker volume (`icmarket-data`)
-- Automatic health checks every 30 seconds
-- `restart: unless-stopped` policy
+The API will be available at http://localhost:8080.
+
+### Docker Features
+
+| Feature | Implementation |
+|---------|----------------|
+| **Health Check** | `HEALTHCHECK` instruction using `curl` — auto-restarts unhealthy containers |
+| **Volumes** | `icmarket-data` (SQLite DB), `icmarket-logs` (application logs) |
+| **Networking** | Bridge network (`icmarket-network`) for container isolation |
+| **Restart Policy** | `unless-stopped` — auto-restart on failure |
+| **Non-root User** | Runs as `$APP_UID` for security |
+| **Metadata** | `LABEL` instructions for maintainer, version, description |
+
+### Volume Paths
+
+```yaml
+volumes:
+  - icmarket-data:/app/data    # SQLite database
+  - icmarket-logs:/app/logs    # Application logs
+```
+
+## CI/CD Pipeline
+
+GitHub Actions workflow (`.github/workflows/ci-cd.yml`) with 6 jobs:
+
+| Job | Description |
+|-----|-------------|
+| **Build** | Restore, build, upload artifacts |
+| **Test** | Run all 74 tests (Unit, Integration, Functional) with code coverage |
+| **Code Quality** | `dotnet format --verify-no-changes` |
+| **Security Scan** | `dotnet list package --vulnerable` — fails on vulnerable packages |
+| **Docker Build** | Build image, run container, test endpoints |
+| **Docker Push** | (Optional) Push to container registry on `main` branch |
+
+### Test Reporting
+
+Test results are published to GitHub Actions UI via `dorny/test-reporter` with:
+- Per-test pass/fail status
+- Duration metrics
+- Failure details with stack traces
+
+### Triggers
+
+- Push to `main`, `master`, or `development` branches
+- Pull requests to protected branches
+- Manual trigger via `workflow_dispatch`
 
 ## Implementation Details
 
@@ -328,9 +428,9 @@ Indexes: composite `(Name, CreatedAt)` + `(CreatedAt)` for efficient querying.
 | 1 | .NET Core with Clean Architecture and SOLID | ✅ 5-layer Clean Architecture |
 | 2 | API endpoints in Swagger showing blockchain history | ✅ 3 endpoints with Swagger UI |
 | 3 | CreatedAt timestamp, descending order | ✅ Entity + repository ordering |
-| 4 | HealthChecks route and basic CORS policy | ✅ `/health` + AllowAll CORS |
+| 4 | HealthChecks route and basic CORS policy | ✅ `/health` + configurable CORS |
 | 5 | DI, logging, model mapping, serialization, validation | ✅ All implemented |
-| 6 | Integration, Functional, and Unit Test projects | ✅ 3 test projects (45+ tests) |
+| 6 | Integration, Functional, and Unit Test projects | ✅ 3 test projects (74 tests) |
 | 7 | Runtime profiles: .NET, Docker (Linux) | ✅ launchSettings.json + Dockerfile |
 
 ### Framework Requirements
@@ -340,7 +440,7 @@ Indexes: composite `(Name, CreatedAt)` + `(CreatedAt)` for efficient querying.
 | 1 | .NET Core >= .NET 6 | ✅ .NET 8 |
 | 2 | Database: SQLite (EF) | ✅ SQLite via EF Core |
 | 3 | Data stored as provided in API JSON responses | ✅ Full field mapping |
-| 4 | Best practices: performance, inheritance, scalability | ✅ Async, parallel, clean arch |
+| 4 | Best practices: performance, inheritance, scalability | ✅ Async, parallel, caching, rate limiting |
 | 5 | Async/parallel patterns (Tasks, PLinq) | ✅ Task.WhenAll for parallel fetch |
 | 6 | At least two design patterns | ✅ CQRS + Repository + UoW (3 patterns) |
 | 7 | Optional: API Gateway | ⏭️ Not implemented |

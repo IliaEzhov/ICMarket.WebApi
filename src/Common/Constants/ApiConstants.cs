@@ -5,6 +5,13 @@ namespace ICMarket.Common.Constants;
 /// </summary>
 public static class ApiConstants
 {
+	public static class Pagination
+	{
+		public const int DefaultPage = 1;
+		public const int DefaultPageSize = 50;
+		public const int MaxPageSize = 200;
+	}
+
 	public static class Routes
 	{
 		public const string Blockchain = "api/blockchain";
@@ -13,7 +20,13 @@ public static class ApiConstants
 
 	public static class Cors
 	{
-		public const string AllowAll = "AllowAll";
+		public const string PolicyName = "CorsPolicy";
+	}
+
+	public static class RateLimiting
+	{
+		public const string DefaultPolicy = "fixed";
+		public const string StrictPolicy = "strict";
 	}
 
 	public static class Configuration
