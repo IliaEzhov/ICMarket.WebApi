@@ -1,6 +1,17 @@
 @API_HostAddress = http://localhost:5182
 
-GET {{API_HostAddress}}/weatherforecast/
+### Get all blockchain data (paginated)
+GET {{API_HostAddress}}/api/blockchain?page=1&pageSize=10
 Accept: application/json
 
-###
+### Get blockchain data by name
+GET {{API_HostAddress}}/api/blockchain/BTC.main?page=1&pageSize=10
+Accept: application/json
+
+### Fetch and store latest blockchain data from Blockcypher
+POST {{API_HostAddress}}/api/blockchain/fetch
+Accept: application/json
+
+### Health check
+GET {{API_HostAddress}}/health
+Accept: application/json
