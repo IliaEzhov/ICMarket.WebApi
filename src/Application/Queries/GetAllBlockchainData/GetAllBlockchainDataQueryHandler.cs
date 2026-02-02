@@ -23,19 +23,27 @@ public class GetAllBlockchainDataQueryHandler : IRequestHandler<GetAllBlockchain
 
 	public async Task<PaginatedResult<BlockchainDataDto>> Handle(GetAllBlockchainDataQuery request, CancellationToken cancellationToken)
 	{
-		var page = Math.Max(1, request.Page);
-		var pageSize = Math.Clamp(request.PageSize, 1, ApiConstants.Pagination.MaxPageSize);
-
-		_logger.LogInformation("Querying all blockchain data (page {Page}, pageSize {PageSize})", page, pageSize);
-		var (items, totalCount) = await _repository.GetAllAsync(page, pageSize, cancellationToken);
-		_logger.LogInformation("Retrieved {Count} of {Total} blockchain records", items.Count(), totalCount);
-
-		return new PaginatedResult<BlockchainDataDto>
+		try
 		{
-			Items = items.ToDtoList(),
-			Page = page,
-			PageSize = pageSize,
-			TotalCount = totalCount
-		};
+			var page = Math.Max(1, request.Page);
+			var pageSize = Math.Clamp(request.PageSize, 1, ApiConstants.Pagination.MaxPageSize);
+
+			_logger.LogInformation("Querying all blockchain data (page {Page}, pageSize {PageSize})", page, pageSize);
+			var (items, totalCount) = await _repository.GetAllAsync(page, pageSize, cancellationToken);
+			_logger.LogInformation("Retrieved {Count} of {Total} blockchain records", items.Count(), totalCount);
+
+			return new PaginatedResult<BlockchainDataDto>
+			{
+				Items = items.ToDtoList(),
+				Page = page,
+				PageSize = pageSize,
+				TotalCount = totalCount
+			};
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogError(ex, "Failed to retrieve all blockchain data (page {Page}, pageSize {PageSize})", request.Page, request.PageSize);
+			throw;
+		}
 	}
 }

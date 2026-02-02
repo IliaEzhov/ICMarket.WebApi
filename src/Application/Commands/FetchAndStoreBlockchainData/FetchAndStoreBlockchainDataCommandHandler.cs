@@ -32,16 +32,24 @@ public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAn
 
 	public async Task<IEnumerable<BlockchainDataDto>> Handle(FetchAndStoreBlockchainDataCommand request, CancellationToken cancellationToken)
 	{
-		_logger.LogInformation("Fetching blockchain data from all configured endpoints");
-		var blockchainData = await _blockchainService.FetchAllBlockchainDataAsync(cancellationToken);
+		try
+		{
+			_logger.LogInformation("Fetching blockchain data from all configured endpoints");
+			var blockchainData = await _blockchainService.FetchAllBlockchainDataAsync(cancellationToken);
 
-		var dataList = blockchainData.ToList();
-		_logger.LogInformation("Fetched {Count} blockchain records, persisting to database", dataList.Count);
+			var dataList = blockchainData.ToList();
+			_logger.LogInformation("Fetched {Count} blockchain records, persisting to database", dataList.Count);
 
-		await _repository.AddRangeAsync(dataList, cancellationToken);
-		await _unitOfWork.SaveChangesAsync(cancellationToken);
+			await _repository.AddRangeAsync(dataList, cancellationToken);
+			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-		_logger.LogInformation("Successfully persisted {Count} blockchain records", dataList.Count);
-		return dataList.ToDtoList();
+			_logger.LogInformation("Successfully persisted {Count} blockchain records", dataList.Count);
+			return dataList.ToDtoList();
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			_logger.LogError(ex, "Failed to fetch and store blockchain data");
+			throw;
+		}
 	}
 }
