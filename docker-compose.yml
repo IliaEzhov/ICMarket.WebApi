@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  icmarket-api:
+    build:
+      context: .
+      dockerfile: src/API/Dockerfile
+    container_name: icmarket-api
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/ICMarket.db
+    volumes:
+      - icmarket-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  icmarket-data:
