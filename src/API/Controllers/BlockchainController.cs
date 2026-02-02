@@ -5,6 +5,7 @@ using ICMarket.Application.Queries.GetBlockchainDataByName;
 using ICMarket.Common.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ICMarket.API.Controllers;
 
@@ -14,6 +15,7 @@ namespace ICMarket.API.Controllers;
 /// </summary>
 [ApiController]
 [Route(ApiConstants.Routes.Blockchain)]
+[EnableRateLimiting(ApiConstants.RateLimiting.DefaultPolicy)]
 public class BlockchainController : ControllerBase
 {
 	private readonly IMediator _mediator;
@@ -30,6 +32,7 @@ public class BlockchainController : ControllerBase
 	/// </summary>
 	/// <returns>The newly fetched and stored blockchain data records.</returns>
 	[HttpPost("fetch")]
+	[EnableRateLimiting(ApiConstants.RateLimiting.StrictPolicy)]
 	[ProducesResponseType(typeof(IEnumerable<BlockchainDataDto>), StatusCodes.Status200OK)]
 	public async Task<IActionResult> FetchBlockchainData(CancellationToken cancellationToken)
 	{

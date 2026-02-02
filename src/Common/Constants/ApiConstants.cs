@@ -20,7 +20,13 @@ public static class ApiConstants
 
 	public static class Cors
 	{
-		public const string AllowAll = "AllowAll";
+		public const string PolicyName = "CorsPolicy";
+	}
+
+	public static class RateLimiting
+	{
+		public const string DefaultPolicy = "fixed";
+		public const string StrictPolicy = "strict";
 	}
 
 	public static class Configuration

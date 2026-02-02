@@ -1,5 +1,8 @@
+using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using ICMarket.API.Filters;
+using Microsoft.AspNetCore.RateLimiting;
 using ICMarket.API.Middleware;
 using ICMarket.Application;
 using ICMarket.Common.Constants;
@@ -34,18 +37,63 @@ builder.Services.AddSwaggerGen(options =>
 		Version = SwaggerConstants.ApiInfo.Version,
 		Description = SwaggerConstants.ApiInfo.Description
 		});
+
+	var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+	var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+	if (File.Exists(xmlPath))
+		options.IncludeXmlComments(xmlPath);
 });
 
-// CORS
+// CORS (configurable per environment via appsettings)
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["*"];
+var corsMethods = builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? ["*"];
+var corsHeaders = builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? ["*"];
+
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy(ApiConstants.Cors.AllowAll, policy =>
+	options.AddPolicy(ApiConstants.Cors.PolicyName, policy =>
 	{
-		policy.AllowAnyOrigin()
-			.AllowAnyMethod()
-			.AllowAnyHeader();
+		if (corsOrigins.Contains("*"))
+			policy.AllowAnyOrigin();
+		else
+			policy.WithOrigins(corsOrigins);
+
+		if (corsMethods.Contains("*"))
+			policy.AllowAnyMethod();
+		else
+			policy.WithMethods(corsMethods);
+
+		if (corsHeaders.Contains("*"))
+			policy.AllowAnyHeader();
+		else
+			policy.WithHeaders(corsHeaders);
 	});
 });
+
+// Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+	options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+	options.AddFixedWindowLimiter(ApiConstants.RateLimiting.DefaultPolicy, opt =>
+	{
+		opt.PermitLimit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
+		opt.Window = TimeSpan.FromSeconds(builder.Configuration.GetValue("RateLimiting:WindowInSeconds", 60));
+		opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+		opt.QueueLimit = 0;
+	});
+
+	options.AddFixedWindowLimiter(ApiConstants.RateLimiting.StrictPolicy, opt =>
+	{
+		opt.PermitLimit = builder.Configuration.GetValue("RateLimiting:FetchPermitLimit", 5);
+		opt.Window = TimeSpan.FromSeconds(builder.Configuration.GetValue("RateLimiting:FetchWindowInSeconds", 60));
+		opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+		opt.QueueLimit = 0;
+	});
+});
+
+// In-Memory Cache
+builder.Services.AddMemoryCache();
 
 // Health Checks
 builder.Services.AddHealthChecks()
@@ -71,7 +119,8 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseHttpsRedirection();
-app.UseCors(ApiConstants.Cors.AllowAll);
+app.UseCors(ApiConstants.Cors.PolicyName);
+app.UseRateLimiter();
 app.MapControllers();
 app.MapHealthChecks(ApiConstants.Routes.Health);
 

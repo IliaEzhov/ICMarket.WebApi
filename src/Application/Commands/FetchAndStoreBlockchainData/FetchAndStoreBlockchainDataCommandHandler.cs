@@ -16,17 +16,20 @@ public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAn
 	private readonly IBlockchainService _blockchainService;
 	private readonly IBlockchainDataRepository _repository;
 	private readonly IUnitOfWork _unitOfWork;
+	private readonly ICacheInvalidator _cacheInvalidator;
 	private readonly ILogger<FetchAndStoreBlockchainDataCommandHandler> _logger;
 
 	public FetchAndStoreBlockchainDataCommandHandler(
 		IBlockchainService blockchainService,
 		IBlockchainDataRepository repository,
 		IUnitOfWork unitOfWork,
+		ICacheInvalidator cacheInvalidator,
 		ILogger<FetchAndStoreBlockchainDataCommandHandler> logger)
 	{
 		_blockchainService = blockchainService;
 		_repository = repository;
 		_unitOfWork = unitOfWork;
+		_cacheInvalidator = cacheInvalidator;
 		_logger = logger;
 	}
 
@@ -43,7 +46,8 @@ public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAn
 			await _repository.AddRangeAsync(dataList, cancellationToken);
 			await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-			_logger.LogInformation("Successfully persisted {Count} blockchain records", dataList.Count);
+			_cacheInvalidator.InvalidateAll();
+			_logger.LogInformation("Successfully persisted {Count} blockchain records and invalidated cache", dataList.Count);
 			return dataList.ToDtoList();
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)

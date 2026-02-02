@@ -16,6 +16,9 @@ services:
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/ICMarket.db
     volumes:
       - icmarket-data:/app/data
+      - icmarket-logs:/app/logs
+    networks:
+      - icmarket-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -26,3 +29,8 @@ services:
 
 volumes:
   icmarket-data:
+  icmarket-logs:
+
+networks:
+  icmarket-network:
+    driver: bridge
