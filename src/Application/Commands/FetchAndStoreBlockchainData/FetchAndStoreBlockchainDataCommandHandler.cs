@@ -1,4 +1,5 @@
 using ICMarket.Application.DTOs;
+using ICMarket.Application.Exceptions;
 using ICMarket.Application.Interfaces;
 using ICMarket.Application.Mappings;
 using ICMarket.Domain.Interfaces;
@@ -50,10 +51,15 @@ public class FetchAndStoreBlockchainDataCommandHandler : IRequestHandler<FetchAn
 			_logger.LogInformation("Successfully persisted {Count} blockchain records and invalidated cache", dataList.Count);
 			return dataList.ToDtoList();
 		}
-		catch (Exception ex) when (ex is not OperationCanceledException)
+		catch (HttpRequestException ex)
 		{
-			_logger.LogError(ex, "Failed to fetch and store blockchain data");
-			throw;
+			_logger.LogError(ex, "External API call failed while fetching blockchain data");
+			throw new ExternalServiceException("BlockCypher", "Failed to fetch blockchain data from BlockCypher API.", ex);
+		}
+		catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+		{
+			_logger.LogError(ex, "External API call timed out while fetching blockchain data");
+			throw new ExternalServiceException("BlockCypher", "BlockCypher API request timed out.", ex);
 		}
 	}
 }

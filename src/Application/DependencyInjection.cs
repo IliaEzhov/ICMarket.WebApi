@@ -24,10 +24,10 @@ public static class DependencyInjection
 		services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 		services.AddValidatorsFromAssembly(assembly);
 
-		// Register pipeline behaviors (order matters: logging → caching → validation → handler)
+		// Register pipeline behaviors (order matters: logging → validation → caching → handler)
 		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 
 		services.AddSingleton<ICacheInvalidator, CacheInvalidator>();
 

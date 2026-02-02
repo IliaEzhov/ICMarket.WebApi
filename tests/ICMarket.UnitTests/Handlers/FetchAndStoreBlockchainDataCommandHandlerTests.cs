@@ -1,4 +1,5 @@
 using ICMarket.Application.Commands.FetchAndStoreBlockchainData;
+using ICMarket.Application.Exceptions;
 using ICMarket.Application.Interfaces;
 using ICMarket.Domain.Entities;
 using ICMarket.Domain.Interfaces;
@@ -108,5 +109,46 @@ public class FetchAndStoreBlockchainDataCommandHandlerTests
 		Assert.That(result, Is.Empty);
 		_repositoryMock.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<BlockchainData>>(), It.IsAny<CancellationToken>()), Times.Once);
 		_unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+	}
+
+	[Test]
+	public void Handle_WhenExternalApiFails_ShouldThrowExternalServiceException()
+	{
+		_blockchainServiceMock
+			.Setup(s => s.FetchAllBlockchainDataAsync(It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new HttpRequestException("Connection refused"));
+
+		var ex = Assert.ThrowsAsync<ExternalServiceException>(
+			async () => await _handler.Handle(new FetchAndStoreBlockchainDataCommand(), CancellationToken.None));
+
+		Assert.That(ex!.ServiceName, Is.EqualTo("BlockCypher"));
+		Assert.That(ex.InnerException, Is.TypeOf<HttpRequestException>());
+	}
+
+	[Test]
+	public void Handle_WhenExternalApiTimesOut_ShouldThrowExternalServiceException()
+	{
+		_blockchainServiceMock
+			.Setup(s => s.FetchAllBlockchainDataAsync(It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new TaskCanceledException("Request timed out", new TimeoutException()));
+
+		var ex = Assert.ThrowsAsync<ExternalServiceException>(
+			async () => await _handler.Handle(new FetchAndStoreBlockchainDataCommand(), CancellationToken.None));
+
+		Assert.That(ex!.ServiceName, Is.EqualTo("BlockCypher"));
+	}
+
+	[Test]
+	public void Handle_WhenCancelled_ShouldNotWrapInExternalServiceException()
+	{
+		var cts = new CancellationTokenSource();
+		cts.Cancel();
+
+		_blockchainServiceMock
+			.Setup(s => s.FetchAllBlockchainDataAsync(It.IsAny<CancellationToken>()))
+			.ThrowsAsync(new OperationCanceledException());
+
+		Assert.ThrowsAsync<OperationCanceledException>(
+			async () => await _handler.Handle(new FetchAndStoreBlockchainDataCommand(), cts.Token));
 	}
 }
