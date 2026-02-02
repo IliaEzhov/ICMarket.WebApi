@@ -21,6 +21,9 @@ public static class DependencyInjection
 
 		services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 		services.AddValidatorsFromAssembly(assembly);
+
+		// Register pipeline behaviors (order matters: logging runs first, then validation)
+		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 		services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 		return services;
