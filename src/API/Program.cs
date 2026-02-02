@@ -36,7 +36,7 @@ builder.Services.AddSwaggerGen(options =>
 		Title = SwaggerConstants.ApiInfo.Title,
 		Version = SwaggerConstants.ApiInfo.Version,
 		Description = SwaggerConstants.ApiInfo.Description
-		});
+	});
 
 	var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
 	var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);

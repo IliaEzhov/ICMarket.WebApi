@@ -271,9 +271,9 @@ jobs:
         run: |
           echo "🔌 Testing API endpoints..."
           
-          # Test GET /api/blockchain (should return 200 with empty or populated list)
-          echo "Testing GET /api/blockchain..."
-          BLOCKCHAIN_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain?page=1&pageSize=10")
+          # Test GET /api/blockchain (should return 200 with empty list initially)
+          echo "Testing GET /api/blockchain (empty database)..."
+          BLOCKCHAIN_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain?page=1&pageSize=10")
           if [ "$BLOCKCHAIN_STATUS" = "200" ]; then
             echo "✅ GET /api/blockchain returned HTTP $BLOCKCHAIN_STATUS"
           else
@@ -281,31 +281,33 @@ jobs:
             exit 1
           fi
           
-          # Test GET /api/blockchain/{name} with a blockchain name
-          echo "Testing GET /api/blockchain/ethereum..."
-          BLOCKCHAIN_NAME_STATUS=$(curl -sf -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain/ethereum?page=1&pageSize=10")
-          if [ "$BLOCKCHAIN_NAME_STATUS" = "200" ]; then
-            echo "✅ GET /api/blockchain/ethereum returned HTTP $BLOCKCHAIN_NAME_STATUS"
+          # Test POST /api/blockchain/fetch (trigger data fetch from BlockCypher API)
+          echo "Testing POST /api/blockchain/fetch..."
+          FETCH_RESPONSE=$(curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/blockchain/fetch)
+          FETCH_HTTP_CODE=$(echo "$FETCH_RESPONSE" | tail -n1)
+          FETCH_BODY=$(echo "$FETCH_RESPONSE" | sed '$d')
+          if [ "$FETCH_HTTP_CODE" = "200" ]; then
+            echo "✅ POST /api/blockchain/fetch succeeded (HTTP $FETCH_HTTP_CODE)"
+            echo "Response: $(echo "$FETCH_BODY" | head -c 300)..."
           else
-            echo "❌ GET /api/blockchain/ethereum failed (HTTP $BLOCKCHAIN_NAME_STATUS)"
-            exit 1
+            echo "⚠️ POST /api/blockchain/fetch returned HTTP $FETCH_HTTP_CODE"
+            echo "This may be acceptable - external BlockCypher API may be rate-limited"
+            echo "Response: $FETCH_BODY"
           fi
           
-          # Test POST /api/blockchain/fetch (trigger data fetch)
-          echo "Testing POST /api/blockchain/fetch..."
-          FETCH_RESPONSE=$(curl -sf -X POST http://localhost:8080/api/blockchain/fetch)
-          FETCH_STATUS=$?
-          if [ $FETCH_STATUS -eq 0 ]; then
-            echo "✅ POST /api/blockchain/fetch succeeded"
-            echo "Response: $FETCH_RESPONSE"
+          # Test GET /api/blockchain/{name} with correct blockchain name format (e.g., ETH.main)
+          echo "Testing GET /api/blockchain/ETH.main..."
+          BLOCKCHAIN_NAME_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/api/blockchain/ETH.main?page=1&pageSize=10")
+          if [ "$BLOCKCHAIN_NAME_STATUS" = "200" ]; then
+            echo "✅ GET /api/blockchain/ETH.main returned HTTP $BLOCKCHAIN_NAME_STATUS"
           else
-            echo "⚠️ POST /api/blockchain/fetch may have failed (external API dependency)"
-            echo "This is acceptable in CI - external APIs may be rate-limited"
+            echo "❌ GET /api/blockchain/ETH.main failed (HTTP $BLOCKCHAIN_NAME_STATUS)"
+            exit 1
           fi
           
           # Verify data was fetched by checking GET endpoint again
           echo "Verifying data persistence..."
-          BLOCKCHAIN_DATA=$(curl -sf "http://localhost:8080/api/blockchain?page=1&pageSize=5")
+          BLOCKCHAIN_DATA=$(curl -s "http://localhost:8080/api/blockchain?page=1&pageSize=5")
           echo "Blockchain data response: $(echo "$BLOCKCHAIN_DATA" | head -c 500)"
 
       - name: Display container logs

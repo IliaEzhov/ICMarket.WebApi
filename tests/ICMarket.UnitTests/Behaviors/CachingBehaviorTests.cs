@@ -98,12 +98,16 @@ public class CachingBehaviorTests
 		var result1 = new PaginatedResult<BlockchainDataDto>
 		{
 			Items = new List<BlockchainDataDto> { new() { Name = "Page1" } },
-			Page = 1, PageSize = 50, TotalCount = 100
+			Page = 1,
+			PageSize = 50,
+			TotalCount = 100
 		};
 		var result2 = new PaginatedResult<BlockchainDataDto>
 		{
 			Items = new List<BlockchainDataDto> { new() { Name = "Page2" } },
-			Page = 2, PageSize = 50, TotalCount = 100
+			Page = 2,
+			PageSize = 50,
+			TotalCount = 100
 		};
 
 		await _behavior.Handle(
@@ -137,12 +141,16 @@ public class CachingBehaviorTests
 		var originalResult = new PaginatedResult<BlockchainDataDto>
 		{
 			Items = new List<BlockchainDataDto> { new() { Name = "Old" } },
-			Page = 1, PageSize = 50, TotalCount = 1
+			Page = 1,
+			PageSize = 50,
+			TotalCount = 1
 		};
 		var newResult = new PaginatedResult<BlockchainDataDto>
 		{
 			Items = new List<BlockchainDataDto> { new() { Name = "New" } },
-			Page = 1, PageSize = 50, TotalCount = 1
+			Page = 1,
+			PageSize = 50,
+			TotalCount = 1
 		};
 		var query = new GetAllBlockchainDataQuery(1, 50);
 
